@@ -1,0 +1,984 @@
+---
+title: "2. Statistical Inference"
+author: "Michael Mayer"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    df_print: paged
+    theme: paper
+    code_folding: show
+    math_method: katex
+subtitle: "Statistical Computing"
+bibliography: biblio.bib
+link-citations: yes
+editor_options: 
+  chunk_output_type: console
+knit: (function(input, ...) {rmarkdown::render(input, output_dir = "docs")})
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  warning = FALSE,
+  message = FALSE, 
+  fig.height = 5,
+  fig.width = 6,
+  eval = TRUE
+)
+```
+
+# Introduction
+
+The focus of this chapter is on computer-intensive methods to calculate confidence intervals and to perform statistical tests. We will give a short introduction into statistical inference first.
+
+This chapter also serves to apply the programming techniques learned in the last chapter.
+
+# Statistical Inference
+
+Statistical inference is the art of making statements about an unknown population parameter $\theta$ from data. Examples of $\theta$: 
+
+- True proportion of patients that benefit from some novel treatment
+- True median income per household in Switzerland
+- True average claim count per insured car year
+- True correlation coefficient between the price of a diamond and its size
+- True average salary difference between males and females unexplained by other factors
+
+The three main tasks are the following:
+
+1. **Point estimation:** Estimate $\theta$ by an estimator $\hat \theta(\text{data})$.
+2. **Interval estimation:** Use the data to provide a confidence interval $I(\text{data})$ for $\theta$. 
+3. **Testing:** Use a test statistic $T(\text{data})$ to measure statistical evidence against a null hypothesis about $\theta$, e.g., $\theta = 0$. If this evidence is strong enough, reject it in favor of the complementary alternative hypothesis, e.g., $\theta \ne 0$.
+
+Mathematical statistics provides the theory to perform these tasks for different parameters $\theta$, and under different circumstances. 
+
+## Classic results for the mean
+
+To revisit the basics of classical statistical inference, we summarize some important results for the mean. 
+
+Let $\mu = \mathbb E(F)$ denote the true mean of a distribution $F$ with standard deviation $\sigma = \sqrt{\text{Var}(F)} < \infty$. Usually, $F$, $\mu$, and $\sigma$ are all unknown. Furthermore, let $\boldsymbol X = (X_1, \dots, X_n)$ be a sample of independent random variables drawn from $F$.
+
+What can we say about the sample mean $\hat \mu = \frac{1}{n}\sum_{i = 1}^n X_i$ as an estimator of $\mu$?
+
+1. The sample mean $\hat \mu$ is unbiased: 
+$$
+  \mathbb E(\hat \mu) = \mathbb E\big(\frac{1}{n}\sum_{i = 1}^n X_i\big) = \frac{1}{n}\sum_{i = 1}^n \mathbb E(X_i) = \mu.
+$$
+2. As $n\to \infty$, $\hat\mu$ converges in probability to $\mu$. This is the (weak) law of large numbers (LLN).
+3. Thanks to the Central Limit Theorem (CLT), the *standardized* mean converges in distribution to a standard normal random variable $Z$ with density $f(x) = \frac{1}{\sqrt{2\pi}}e^{-x^2/2}$. We have
+$$
+  \frac{\hat\mu - \mu}{\sigma(\hat\mu)} \xrightarrow[n\to \infty]{d} Z,
+$$
+where $\sigma(\hat\mu)$ is the standard deviation of the sample mean. Standardization ensures that the limit distribution is non-trivial.
+
+### Standard deviation of the mean
+
+The standard deviation $\sigma(\hat\mu)$ of the sample mean equals
+$$
+  \sigma(\hat\mu) = \sqrt{\text{Var}(\hat\mu)} = \sqrt{\text{Var}\left(\frac{1}{n} \sum_{i = 1}^n X_i\right)} = \sqrt{\frac{1}{n^2} \sum_{i = 1}^n \text{Var}(X_i)} = \sqrt{\frac{1}{n} \text{Var}(X_i)} = \frac{\sigma}{\sqrt{n}}.
+$$
+Since $\sigma = \sigma(F) = \sigma(X_i)$ is unknown in practice, it is usually replaced by the sample standard deviation
+$$
+  \hat\sigma = \sqrt{\frac{1}{n-1}\sum_{i = 1}^{n}(X_i - \hat\mu)^2}.
+$$
+
+**Remarks and outlook:**
+
+- The standard deviation $\sigma(\hat\theta)$ of an estimator $\hat\theta$ is called *standard error*. Thus, the standard error of the mean equals $\sigma/\sqrt{n}$.
+- The *estimated* standard error is denoted by $\hat\sigma(\hat\theta)$. The estimated standard error of the mean equals $\hat\sigma(\hat\mu) = \hat \sigma / \sqrt{n}$.
+- The (estimated) standard error of an estimator is a measure of its accuracy. It can be used to calculate confidence intervals for $\theta$, see later.
+- The sample mean is one of the only estimators whose standard error can be estimated with an explicit formula for general distributions $F$. The Bootstrap will give us the possibility to estimate standard errors of any estimator.
+
+We will now use computer simulations to illustrate the law of large numbers and the CLT. In both cases, we will do repeated sampling from a known(!) distribution $F$.
+
+### Example: Illustrating the LLN
+
+The LLN says that the sample mean approaches the true mean as the sample size grows. We illustrate this by simulating $10^5$ sample means for different sample sizes $n$. The values are all drawn from an exponential distribution with density $f(x) = \lambda e^{-\lambda x}, \ x\ge 0$, with $\lambda = 1/\mu = 1$.
+
+```{r}
+par(mfrow = c(2, 2), mai = rep(0.4, 4))
+nsims <- 1e5
+
+set.seed(100)
+
+for (n in c(1, 10, 50, 200)) {
+  means <- numeric(nsims)
+  for (i in 1:nsims) {
+    means[i] <- mean(rexp(n))
+  }
+  hist(means, breaks = 99, main = paste("n =", n), col = "orange",
+       border = "orange", xlim = c(0, 6), probability = TRUE)
+}
+```
+
+**Comment:** The distribution of the sample mean contracts more and more around the true mean 1.
+
+### Example: Illustrating the CLT
+
+The CLT (roughly) says that the standardized sample mean of a sufficiently large sample is approximately normal, no matter how "non-normal" the *individual* values $X_i$ are. We will illustrate this with the same code as above, now using *standardized* means, and replacing the inner loop by `replicate()` for convenience.
+
+```{r}
+par(mfrow = c(2, 2), mai = rep(0.4, 4))
+nsims <- 1e5
+
+# Standardized mean
+std_mean <- function(x, mu = 1, sd = mu) {
+  (mean(x) - mu) / (sd / sqrt(length(x)))
+}
+
+set.seed(100)
+
+for (n in c(1, 10, 50, 200)) {
+  means <- replicate(nsims, std_mean(rexp(n)))
+  hist(means, breaks = 99, main = paste("n =", n), col = "orange",
+       border = "orange", xlim = c(-4, 4), probability = TRUE)
+}
+```
+
+**Comments:**
+
+- The larger the sample size $n$, the more normal the histograms of the means appear. The difference between $n = 50$ and $n = 200$ is barely visible.
+- The case $n=1$ simply shows the histogram of a standard exponential variate. It is very asymmetric and non-normal.
+- Note that the sum of standard exponentials is Gamma distributed.
+
+### From the CLT to confidence intervals
+
+In practice, we would have access to only *one sample*, and the underlying distribution $F$ of $X_i$ would be unknown. Why is the CLT still relevant? It helps to construct confidence intervals (CI) for $\mu$.
+
+By the CLT and if $n$ is not too small, the probability of the event
+$$
+  \mu - z_{1-\alpha/2} \sigma(\hat\mu) < \hat \mu < \mu + z_{1-\alpha/2}\sigma(\hat\mu)
+$$
+is about $1 - \alpha$, and $z_\beta$ is the $\beta$-quantile of the standard normal distribution.
+
+Consequently,
+$$
+  P\big(\hat\mu - z_{1-\alpha/2} \sigma(\hat\mu) < \mu < \hat \mu + z_{1-\alpha/2}\sigma(\hat\mu)\big) \approx 1 - \alpha.
+$$
+Thus, an approximate $(1-\alpha)\cdot 100\%$-confidence interval for $\mu$ is given by
+
+$$
+  [\hat\mu \pm z_{1-\alpha/2} \sigma(\hat\mu)].
+$$
+Again, since we do not know $\sigma$ in practice, we further approximate this approximation by
+$$
+  [\hat\mu \pm z_{1-\alpha/2} \hat\sigma(\hat\mu)],
+$$
+where $\hat\sigma(\hat\mu) = \hat\sigma / \sqrt{n}$ is the estimated standard error of the mean.
+
+**Remarks:**
+
+- This type of confidence interval is called z-confidence interval for the mean.
+- One often replaces the z-quantiles by the slightly more conservative quantiles of the Student distribution with $n-1$ degrees of freedom. This corrects for the additional uncertainty from estimating $\sigma$ by $\hat \sigma$. If the $X_i$ are normal, Student confidence intervals are exact.
+- As soon as the sample has been drawn, the confidence interval loses its randomness. Then, it does not make sense to say that the interval $I_{1-\alpha}$ contains $\mu$ with probability $1-\alpha$. We rather say: $I_{1-\alpha}$ contains $\mu$ with $(1-\alpha) \cdot 100\%$ confidence (or certainty). This means that if we would repeatedly (and hypothetically) draw many samples from the same population, then about $(1-\alpha) \cdot 100\%$ of the confidence intervals would contain $\mu$.
+
+#### Example: CI for $\mu$
+
+Let's use again a sample of exponential values to calculate an approximate 95% confidence interval for the true mean $\mu$.
+
+```{r}
+set.seed(1)
+
+n <- 50
+x <- rexp(n)
+
+mu_hat <- mean(x)
+se_hat <- sd(x) / sqrt(n)
+z <- qnorm(1 - 0.025)  # 1.96
+
+# z-confidence interval for mu
+c(mu_hat - z * se_hat, mu_hat + z * se_hat)
+
+# Same via function
+ci <- function(x, alpha = 0.05) {
+  z <- qnorm(1 - alpha / 2)
+  se <- sd(x) / sqrt(length(x))
+  out <- mean(x) + -1:1 * z * se
+  names(out) <- c("lci", "estimate", "uci")
+  out
+}
+
+ci(x)
+
+# Compare with more conservative Student CIs
+c(t.test(x)$conf.int)  # What does c() do here?
+```
+
+**Comments:**
+
+- With about 95% confidence, the true mean lies between 0.7369 and 1.2312. 
+- The Student confidence interval is slightly wider, but might be more accurate.
+
+Accuracy of confidence intervals can be assessed by comparing the nominal coverage probability $1 - \alpha$ with the *real* coverage probability. The latter is calculated as the expected proportion of intervals containing the true value $\mu$.
+
+#### Example: Accuracy of the CI
+
+In practice, we only have one sample and one confidence interval, so we cannot calculate the real coverage probability and have to trust the nominal value. In our artificial situation, we can use simulation to generate many samples and their confidence intervals and then estimate the real coverage probability.
+
+```{r}
+# Note: we need the function ci() from above
+
+library(tidyverse)
+
+n <- 50
+nsims <- 1e4
+theta <- 1
+
+set.seed(260)
+
+results <- replicate(nsims, ci(rexp(n, rate = 1 / theta))) %>% 
+  t() %>% 
+  data.frame() %>% 
+  mutate(ok = (lci <= theta) & (theta <= uci))
+head(results)
+
+# Proportion correct
+mean(results$ok)
+
+# Plot confidence intervals of 100 samples (lengthy ggplot...)
+ggplot(results[1:100, ], aes(x = rank(estimate), y = estimate, color = ok)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lci, ymax = uci)) +
+  geom_hline(yintercept = theta, color = "darkgray") +
+  coord_flip() +
+  scale_color_viridis_d(begin = 0.4, end = 0.8, option = "magma") +
+  theme(
+    legend.position = "none", 
+    axis.text.y = element_blank(), 
+    axis.ticks.y = element_blank()
+  ) +
+  labs(
+    x = "Sorted by estimate", 
+    y = "values", 
+    title = "Confidence intervals calculated from 100 samples"
+  )
+```
+
+**Comments:** The real coverage probability is lower than the stated one. This undesirable property might be a consequence of the skewed data.
+
+## Other estimators
+
+So far, we have been mainly concerned with the sample mean. What about other estimators to estimate other parameters? 
+
+Many estimators $\hat \theta$ are asymptotically normal. Then, following the same logic as with the sample mean, approximate $(1-\alpha)\cdot 100\%$ confidence intervals for their parameter $\theta$ are given by
+$$
+  I_{1-\alpha} = [\hat \theta \pm z_{1-\alpha/2} \hat \sigma(\hat\theta)].
+$$
+The problem of such standard normal (or Wald) confidence intervals: For most estimators, no formula of their estimated standard error $\hat\sigma(\hat \theta)$ is available. This is where the Bootstrap enters the stage.
+
+# The Bootstrap
+
+@efron1979 found a fully generic and computer-based way to estimate the standard error of *any* estimator: The Bootstrap.
+
+## The Bootstrap estimate of standard error
+
+Let $\boldsymbol x = (x_1, \dots, x_n)$ be a specific sample from some unknown population, and we want to compute the standard error of an estimator $\hat\theta(\boldsymbol x)$ for a population parameter $\theta$. 
+
+The Bootstrap estimate of standard error is calculated as follows:
+
+1. To mimic the process of obtaining $\boldsymbol x$, we draw independently and with replacement a *Bootstrap sample* $\boldsymbol x^*$ of size $n$ from the original sample $\boldsymbol x$. 
+2. Then, we calculate the Bootstrap replication $\hat \theta(\boldsymbol x^*)$ of $\hat\theta(\boldsymbol x)$. 
+3. We repeat above two steps $B$ times to get $B$ Bootstrap replications $\hat \theta(\boldsymbol x^{*1}), \dots, \hat \theta(\boldsymbol x^{*B})$.
+4. The Bootstrap estimate $\hat\sigma_{boot}(\hat\theta)$ of the standard error of $\hat\theta(\boldsymbol x)$ is finally calculated as the sample standard deviation of the $B$ values $\hat \theta(\boldsymbol x^{*1}), \dots, \hat \theta(\boldsymbol x^{*B})$.
+
+**Remarks:**
+
+- The Bootstrap sample is to the original sample what the original sample is to the population.
+- According to @efron1993, typical values for $B$ are between 25 and 200, but see the examples below for another suggestion.
+- The name "Bootstrap" comes from a story on Baron Munchhausen, who pulls himself out of swamp by his Bootstraps (actually, by his hair!). It means that we do something that is impossible: Using a single sample to say something about many samples.
+
+### Bootstrapping in R
+
+In R, different contributed packages (e.g., "boot") exist to perform Bootstrapping. However, standard Bootstrap is so simple that we only need the key function `sample()`. It has multiple important modes and applications:
+
+- **`sample(x, replace = TRUE)`**: Bootstrap sample of vector `x`.
+- **`X[sample(nrow(X), replace = TRUE), ]`**: Bootstrap sample of data/matrix `X`.
+- `sample(x)`: Random permutation of vector `x`. Will use it in Section "Permutation Tests".
+- `X[sample(nrow(X)), ]`: Shuffle rows in data/matrix `X`.
+- `sample(nrow(X), 0.8 * nrow(X))`: 80% randomly selected row indices of data `X`.
+- `sample(x, n, replace = TRUE, probs = ...)`: Generate `n` random draws from any discrete distribution with support `x`.
+
+In this section, we will need the first two.
+
+### Example: Mean
+
+Let's calculate the Bootstrap estimate of standard error for the sample mean, one of the only estimators where we can explicitly estimate its standard error from the data.
+
+```{r}
+library(ggplot2)
+
+set.seed(30)
+
+n <- 49
+x <- rexp(n)
+
+# Estimated standard error of mean
+sd(x) / sqrt(n)
+
+# Almost same value via the Bootstrap
+B <- 2000
+boot <- numeric(n)
+
+for (i in 1:B) {
+  x_boot <- sample(x, replace = TRUE)
+  boot[i] <- mean(x_boot)
+}
+
+# Bootstrapped standard error of the mean
+sd(boot)
+
+ggplot(data.frame(Mean = boot), aes(x = Mean)) +
+  geom_histogram(fill = "chartreuse4", bins = 29) +
+  ggtitle("Histogram of Bootstrap replications")
+```
+
+**Comment:** The Bootstrap standard error is very similar to the usual estimate. Here, both are far away from the *true* standard error of the mean of 49 standard exponentials $(1 / 7 \approx 0.1429)$.
+
+According to @efron1993 (p. 47), 25 to 200 Bootstrap samples are usually sufficient to get a stable Bootstrap estimate of the standard error. The following curve indicates differently: We calculate the Bootstrap estimate of standard error for all sequences from 1 to $b$, $20 \le b \le B$ and plot the results:
+
+```{r}
+plot_stability <- function(x) {
+  df <- data.frame(x = x, b = 1:length(x))
+  df$se <- sapply(df$b, function(i) sd(x[1:i]))  # "cumsd"
+
+  ggplot(subset(df, b >= 20), aes(b, se)) +
+    geom_line(color = "chartreuse4") +
+    ggtitle("Stability of Bootstrap Estimate of Standard Error")
+}
+
+plot_stability(boot) +
+  geom_hline(yintercept = sd(x) / sqrt(n))  # Estimated standard error of the mean
+```
+
+**Comment:** The curve starts to stabilize around the standard estimate (horizontal black line) not before 1200 Bootstrap samples. 
+
+### Example: Median
+
+Let's turn to the **median**. No simple formula for its standard error exists. (For large samples and normally distributed values, it is $\sqrt{\pi/2} \approx 1.253$ times as large as the standard error of the mean.) In the last example, we now simply replace the mean with the median to get the Bootstrap standard error of the median. 
+
+To simplify the code, we use `replicate()` instead of the `for` loop. This has the advantage of not needing to initialize the resulting vector.
+
+```{r}
+library(ggplot2)
+
+set.seed(30)
+
+n <- 49
+x <- rexp(n)
+
+# Sample median (Population median is ln(2) / lambda = ln(2) \approx 0.693)
+median(x)
+
+boot <- replicate(2000, median(sample(x, replace = TRUE)))
+
+# Bootstrapped standard error of the median
+sd(boot)
+
+ggplot(data.frame(Median = boot), aes(x = Median)) +
+  geom_histogram(fill = "chartreuse4", bins = 29) +
+  ggtitle("Histogram of Bootstrap replications")
+
+# Function defined in last example
+plot_stability(boot)
+```
+
+**Comment:** In this example, around 1000 resamples would have been enough to find a stable Bootstrap estimate of the standard error of the median. In contrast to the last example on the mean, we cannot compare with a "standard" estimate - we have to rely on the validity of the Bootstrap. A stability curve can be plotted in all situations.
+
+## Bootstrap confidence intervals
+
+The Bootstrap gives us a convenient way to estimate the standard error $\sigma(\hat \theta)$ of any estimator $\hat \theta$. Assuming asymptotic normality of $\hat \theta$, we can calculate standard normal $(1-\alpha)\cdot 100\%$-confidence intervals
+$$
+  [\hat \theta \pm z_{1-\alpha/2} \hat \sigma(\hat\theta)],
+$$
+using the Bootstrap estimate of the standard error in place of $\hat \sigma(\hat\theta)$. 
+
+### Example: Median
+
+Let's revisit again the last example. We have estimated the standard error of the median by 0.0756. This leads to an approximate normal 95%-Bootstrap CI of $0.8549 \pm 1.96 \cdot 0.0756 \approx [0.707, 1.003]$. The code to calculate it:
+
+```{r}
+set.seed(30)
+
+n <- 49
+x <- rexp(n)  # Population median is ln(2) / lambda = ln(2)
+
+boot <- replicate(2000, median(sample(x, replace = TRUE)))
+median(x) + c(-1, 1) * qnorm(0.975) * sd(boot)
+```
+
+In the case of the median (and other quantiles), we actually do not need to rely on the Bootstrap to calculate confidence intervals as there is a fully nonparametric method based on order statistics. It is exact in the sense that the intervals are never anti-conservative, see @hahn2014. Additionally, it does not require resampling.
+
+```{r}
+ci_median_nonpar <- function(x, alpha = 0.05, q = 0.5) {
+  K <- qbinom(c(alpha / 2, 1 - alpha / 2), length(x), q) + 0:1
+  sort(x)[K]
+}
+
+ci_median_nonpar(x)  # [0.699, 1.013]
+```
+
+### Percentile confidence intervals
+
+In some of the examples above, we have plotted a histogram of the Bootstrap replications. A simple alternative to the standard normal confidence interval is to use the empirical $(\alpha/2)$ and $(1-\alpha/2)$ quantiles of the Bootstrap replications to build a so-called *percentile* Bootstrap confidence interval.
+
+Compared to the standard normal approach,
+
+- no asymptotic normality of the estimator is required,
+- it is slightly simpler to compute,
+- it is transformation respecting (e.g., using log estimates gives the same CI as log transforming the confidence limits),
+- it is range-preserving (a correlation coefficient should stay within the unit interval),
+- but *more Bootstrap samples* are usually required to get stable results (why?).
+- Furthermore, it is difficult to give a rigorous explanation of the technique.
+
+### Example: Percentile CI for the median
+
+Let us also calculate the percentile Bootstrap confidence interval in our example on the median. Only two rows of code are required: 
+
+```{r}
+set.seed(30)
+
+n <- 49
+x <- rexp(n)  # Population median is ln(2) / lambda = ln(2)
+
+# Percentile Bootstrap
+boot <- replicate(9999, median(sample(x, replace = TRUE)))
+quantile(boot, c(0.025, 0.975), names = FALSE)
+```
+
+**Comment:** This result is similar to the one obtained from the non-parametric approach based on order statistics.
+
+### Example: Accuracy
+
+Let's compare the accuracy of the three types of confidence intervals for the population median in our artificial example. We use repeated sampling from the exponential distribution, and further repeat the process for different sample sizes (9, 49 and 99).
+
+Because of nested loops, the code takes long to run. Thus, we store the result on disk.
+
+```{r}
+set.seed(30)
+
+nsim <- 1000
+sample_sizes <- as.character(c(9, 49, 99))
+
+result <- array(
+  dim = c(length(sample_sizes), 3, nsim), 
+  dimnames = list(sample_sizes, c("Norm", "Perc", "NP"), NULL)
+)
+
+is_ok <- function(ci, theta = log(2)) {
+  (ci[1] <= theta) & (ci[2] >= theta)
+}
+
+# Function copy pasted from above
+ci_median_nonpar <- function(x, alpha = 0.05, q = 0.5) {
+  K <- qbinom(c(alpha / 2, 1 - alpha / 2), length(x), q) + 0:1
+  sort(x)[K]
+}
+
+if (FALSE) {  # Trick to skip code block without commenting out
+  system.time(  # 23 minutes
+    for (n in sample_sizes) {
+      print(n)
+      pb <- txtProgressBar(max = nsim, style = 3)
+      for (i in 1:nsim) {
+        x <- rexp(as.character(n))
+        boot <- replicate(9999, median(sample(x, replace = TRUE)))
+        
+        result[n, "Norm", i] <- is_ok(median(x) + c(-1, 1) * qnorm(0.975) * sd(boot))
+        result[n, "Perc", i] <- is_ok(quantile(boot, c(0.025, 0.975), names = FALSE))
+        result[n, "NP", i] <- is_ok(ci_median_nonpar(x))
+        
+        setTxtProgressBar(pb, i)
+      }
+    }
+  )
+
+# saveRDS(result, "simulation/ci_median.rds")
+} else{
+  result <- readRDS("simulation/ci_median.rds")
+}
+
+(coverage_probs <- apply(result, 1:2, FUN = mean))
+
+# Some tidyverse magic for visualization
+library(tidyverse)
+
+coverage_probs %>% 
+  data.frame() %>% 
+  rownames_to_column("n") %>% 
+  mutate(n = as.integer(n)) %>% 
+  pivot_longer(cols = -n, names_to = "method") %>% 
+ggplot(aes(y = value, x = n, group = method, color = method)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 0.95, color = "darkgrey") +
+  coord_cartesian(xlim = c(1, 100))
+```
+
+**Comment:** The coverage probabilities are surprisingly close to the nominal coverage of 95%, even for the tiny sample size 9. The non-parametric intervals are conservative by construction. In this case, the standard normal confidence interval are slightly anti-conservative. 
+
+## Better CIs
+
+At the cost of more complexity, more accurate Bootstrap confidence intervals can be constructed. One is the bias-corrected and accelerated $BC_\alpha$ confidence interval, which is an improved version of the percentile method (using different order statistics as limits), and available in the "boot" package.
+
+### Example: the "boot" package
+
+```{r}
+library(boot)
+
+set.seed(30)
+
+n <- 49
+x <- rexp(n)  # Population median is ln(2) / lambda = ln(2)
+
+boot_dist <- boot(x, statistic = function(x, id) median(x[id]), R = 9999)
+boot.ci(boot_dist)
+```
+
+**Comment:** Four types of confidence intervals are returned: 
+
+- "Normal": Bias corrected version of our standard normal interval.
+- "Basic": Flipped version of the percentile CI. We have not considered it.
+- "Percentile": Percentile confidence interval
+- "BCa": Bias-corrected and accelerated. In theory the most accurate of the four, and thus in practice often the recommended type of interval.
+
+**Remark on bias correction**: Sometimes, the Bootstrap is also used for bias correction of the estimate $\hat \theta$. We do not consider it here.
+
+## Multiple samples
+
+Many interesting estimators are calculated from two or more samples, e.g., from different treatment groups in a clinical study. Some examples:
+
+- Mean difference between two samples/groups
+- Median difference between two samples
+- R-squared of a one-way ANOVA between multiple groups
+
+The logic for applying the Bootstrap is as before: resample $B$ times with replacement, calculate the $B$ Bootstrap replicates, and then use these $B$ values to calculate standard errors and/or confidence intervals.
+
+There are two ways of how to perform the resampling:
+
+1. By resampling within sample. This keeps the sample sizes fixed.
+2. By resampling rows in a dataset with the group represented as a column. (Like this, we turn the multi-group situation into a multivariate situation, see below.)
+
+Option 1 is usually preferred.
+
+### Example: Mean difference
+
+Let us construct two samples from different exponential distributions: One with true mean 2, the other with true mean 1. Imagine the values are weeks of hospital stay, and the two groups receive different treatments. The task is to create a 95% confidence interval for the true mean difference. The classic approach would be to calculate a two-sample Student confidence interval with unequal variances.
+
+```{r}
+library(ggplot2)
+
+set.seed(1)
+
+nx <- 15
+ny <- 25
+
+x <- rexp(nx, 1 / 2)
+y <- rexp(ny, 1)
+
+# Plot data
+df <- data.frame(value = c(x, y), group = rep(c("x", "y"), times = c(nx, ny)))
+ggplot(df, aes(group, value, fill = group)) +
+  geom_boxplot(varwidth = TRUE, show.legend = FALSE) +
+  scale_fill_viridis_d(begin = 0.5, end = 0.9)
+  
+# Estimate for true mean(x) - mean(y)
+estimator <- function(x, y) {
+  mean(x) - mean(y)
+}
+(est <- estimator(x, y))
+
+# Welch's Student confidence interval for unequal variances
+c(t.test(x, y)$conf.int)
+
+# Bootstrap CIs by resampling within each group
+boot <- replicate(
+  9999,
+  estimator(
+    sample(x, replace = TRUE), 
+    sample(y, replace = TRUE)
+  )
+)
+
+ggplot(data.frame(Estimate = boot), aes(x = Estimate)) +
+  geom_histogram(fill = "chartreuse4", bins = 29) +
+  ggtitle("Histogram of the Bootstrap replications")
+
+# Standard normal Bootstrap CI
+est + c(-1, 1) * qnorm(0.975) * sd(boot)
+
+# Percentile Bootstrap CI
+quantile(boot, c(0.025, 0.975))
+```
+
+**Comment:** The two bootstrap intervals are much narrower than the student interval. We do not know which of the three intervals is the best. Since we know the true distributions of x and y in this example, we could again perform a simulation study and calculate the accuracy of the intervals based on the difference between the actual and nominal coverage probabilities. In practice, this is not possible because the true distributions are unknown. Otherwise we wouldn't need statistics, after all!
+
+## Multivariate estimators
+
+By resampling *rows* in a dataset, we can also work with other multivariate estimators such as the Pearson correlation, Kendall's rank correlation or the R-squared of a linear regression. This allows to study and measure associations between two or more variables using the Bootstrap.
+
+### Example: Pearson correlation
+
+In the following, we will estimate Bootstrap confidence intervals for the true Pearson correlation coefficient $\theta$ of two variables using both the standard normal and the percentile Bootstrap approach. The percentile Bootstrap CI has the advantage of being range-preserving, i.e., staying within $[-1, 1]$ (why?). We will compare the intervals with the classic approach assuming bivariate normality.
+
+```{r}
+library(ggplot2)
+
+x <- seq(0, 1, length.out = 25)
+df <- data.frame(x = x, y = x^2)
+
+# Scatterplot of the bivariate situation
+ggplot(df, aes(x, y)) +
+  geom_point(color = "chartreuse4")
+
+# Classic 95%-CI assuming bivariate normality
+c(cor.test(~ x + y, data = df)$conf.int)
+
+# Estimate
+estimator <- function(X) {
+  cor(X)[1, 2]
+}
+(est <- estimator(df))
+
+# Bootstrap
+set.seed(3)
+boot <- replicate(
+  9999, 
+  estimator(df[sample(nrow(df), replace = TRUE), ])
+)
+
+ggplot(data.frame(Estimate = boot), aes(x = Estimate)) +
+  geom_histogram(fill = "chartreuse4", bins = 29) +
+  ggtitle("Histogram of the Bootstrap replications")
+
+# Standard normal Bootstrap CI
+est + c(-1, 1) * qnorm(0.975) * sd(boot)
+
+# Percentile Bootstrap CI
+quantile(boot, probs = c(0.025, 0.975))
+```
+
+**Comment:** The two Bootstrap CIs are similar, but quite different from the normal confidence interval. In this situation, it is difficult to say which interval is the best.
+
+# Permutation Tests
+
+The main application of the Bootstrap is to estimate standard errors, confidence intervals, and bias. To *test hypotheses* about a parameter $\theta$, another resampling technique shines: **permutation tests**, first described in @fisher1935 - long before the computer age! 
+But what is a statistical test again?
+
+## Hypothesis tests
+
+The motivation of a statistical test is to show that some interesting alternative hypothesis $H_1$ about $\theta$ holds, e.g., $\theta \ne 0$. This is done by measuring evidence against the contrary null hypothesis $H_0$ (e.g., $\theta=0$), using a suitable test statistic $T$. If the evidence is strong enough, we reject $H_0$ in favor of $H_1$. 
+
+The decision is often made by the help of the **p value** calculated from the data: It is the probability of observing at least as much evidence against $H_0$ as in the specific sample when $H_0$ is true, formally
+$$
+  P_{H_0}\{T \ge t\}.
+$$
+$t$ is the observed value of $T$, and $T$ is a random variable. Finding the distribution of $T$ under $H_0$ usually requires mathematical statistics (and several assumptions have to be met). 
+
+If the p value is lower or equal to some prespecified significance level $\alpha$ (often 0.05), we reject $H_0$. 
+
+### Example: t-test
+
+Let's illustrate above concepts by the two-sample t test. Under the null hypothesis of equal population means, assuming both normality and equal variance, its test statistic (the standardized mean difference) follows a t distribution with $n + m - 2$ degrees of freedom. $n$ and $m$ are the sample sizes of the two groups.
+
+```{r}
+set.seed(8)
+
+m <- 20
+n <- 40
+
+# Values in groups A and B
+y_A <- rexp(m, 1)
+y_B <- rexp(n, 1 / 2)
+
+# Long form
+y <- c(y_A, y_B)
+g <- rep(c("A", "B"), times = c(m, n))
+data.frame(y, g)[18:22, ]
+
+boxplot(y ~ g, col = "chartreuse4", varwidth = TRUE)
+
+# We should actually use the default option var.equal = FALSE
+t.test(y ~ g, var.equal = TRUE)
+
+# Calculate p value "by hand" (why multiply with 2?)
+2 * (1 - pt(abs(-2.3297), df = m + n - 2))
+```
+
+**Comment:** The sample mean is clearly larger in group B than in group A. What can we say about the true difference $\theta$ between corresponding population means? The t test gives a p value of 0.023. At the 5% significance level, we can therefore reject the null hypothesis of equal population means.
+
+### Tests for association
+
+The code in the previous example indicates something conceptually important: A two-sample t test can be viewed as a test of association between to variables:
+
+- $\boldsymbol Y$: Numeric variable representing the stacked values of *both* groups
+- $\boldsymbol X$: Binary variable representing the group ("A" and "B")
+
+The association between $\boldsymbol X$ and $\boldsymbol Y$ is measured in terms of a location shift in the grouped means.
+
+Not only the two-sample t test, but many additional parametric and non-parametric tests can be seen as tests for association between two variables. Such tests (and actually, many more) can be tackled by a computer-intensive and fully automatic technique: **Permutation tests**.
+
+## Permutation tests
+
+Let $T$ be a test statistic measuring the strength of association between two variables $\boldsymbol X$ and $\boldsymbol Y$ with observations $\boldsymbol x$ and $\boldsymbol y$. 
+A permutation test finds the null distribution of $T$ by repeatedly shuffling the values in one of the two variables:
+
+1. To destroy the dependency between $\boldsymbol x$ and $\boldsymbol y$, randomly permute the values of $\boldsymbol x$ (or $\boldsymbol y$). The permuted values are denoted by $\boldsymbol x^*$.
+2. Calculate the value $t^* = T(\boldsymbol x^*, \boldsymbol y)$ of the test statistic.
+3. Repeat above two steps $B$ times to get $B$ permutation replications $t^*(1), \dots, t^*(B)$. They form the empirical null hypothesis distribution of $T$.
+4. Following the definition of a p value, calculate the bootstrap p value as $\frac{1}{B}\sum_{i = 1}^B 1\{t^*(i) \ge T(\boldsymbol x, \boldsymbol y)\}$.
+  
+**Remarks**
+
+- $B$ is a large value, e.g., 10000.
+- Ideally, we could evaluate $T$ for all $n!$ permutations. Since this is possible only for tiny data sets, we draw $B$ permutations uniformly and independently from the set of all permutations. This leads to the approximate (or Monte-Carlo) permutation test described above.
+- The R package "coin" works with standardized test statistics, which is sometimes recommended.
+- While the permutation test generates the null distribution of a test statistic, the Bootstrap generates the distribution of a test statistic under the observed data distribution.
+- Permutation tests are not completely assumption-free. The main assumption is permutability (or exchangeability) of the observations under the null hypothesis. This is slightly weaker than the usual iid. assumption.
+
+### Example
+
+Let's perform above two-sample comparison via permutation test:
+
+```{r}
+set.seed(8)
+
+m <- 20
+n <- 40
+
+y1 <- rexp(m, 1)
+y2 <- rexp(n, 1 / 2)
+
+# Long form
+y <- c(y1, y2)
+g <- rep(c("A", "B"), times = c(m, n))
+
+statistic <- function(y, g) {
+  mean_difference <- mean(y[g == "B"]) - mean(y[g == "A"])
+  abs(mean_difference)
+}
+
+# Calculate approximate null distribution
+B <- 1e4
+perm_dist <- replicate(B, statistic(y, sample(g)))
+
+# p value
+mean(perm_dist >= statistic(y, g))
+
+# Via "coin" package
+library(coin)
+
+independence_test(y ~ factor(g), distribution = approximate(nresample = 10000))
+```
+
+**Comment:** Our permutation test gives very similar results to the one in the professional package "coin". They are also similar to the parametric version (see last example). In all cases, we can reject the null hypothesis of no true mean difference at the 5% level.
+
+According to the following figure, $B = 10000$ Monte-Carlo-samples seem large enough: The p values stabilizes relatively quickly.
+
+```{r}
+successive_pvalues <- cumsum(perm_dist >= statistic(y, g)) / (1:B)
+plot(successive_pvalues, pch = ".")
+grid()
+```
+
+### Assessing the quality of a test
+
+In the last example, we have compared the permutation test with the classic t test for equal variances. In the specific case, it is difficult to judge which of the two approaches is better. In our artificial example with simulated data, we can use repeated sampling to calculate Type 1 error and power of the two tests.
+
+- Type 1 error: Probability to reject correct $H_0$.
+- Power: Probability to correctly reject wrong $H_0$ (for specific alternative). 1 minus Type 2 error.
+
+The Type 1 error should be close to the stated significance level, while the power should be as large as possible.
+
+#### Simulation
+
+Let's calculate Type 1 error and power for above artificial situation. We consider the classic t test for equal variance, the permutation test, and also Welch's t test for unequal variances. It is similar to the classic t test, but with corrected degrees of freedom (and usually the recommended of the two parametric t tests). 
+
+To calculate Type 1 error, we simulate the two samples from the same exponential distribution. To calculate power, we draw them from exponential distributions with a mean difference of 1. Other mean differences would lead to other powers.
+
+```{r}
+what <- "type_1_error"  # "Power"  ## Select one of the two
+nsim <- 1000
+m <- 20
+n <- 40
+
+shift <- (what == "Power")  # 0 or 1
+
+result <- matrix(
+  nrow = nsim, ncol = 3, dimnames = list(NULL, c("Welch", "Student", "Perm"))
+)
+
+statistic <- function(y, g) {
+  abs(mean(y[g == "B"]) - mean(y[g == "A"]))
+}
+
+# Simulation
+set.seed(20)
+pb <- txtProgressBar(max = nsim, style = 3)
+if (FALSE) {  # Set to TRUE to rerun
+  for (i in 1:nsim) {
+    y1 <- rexp(m, 1)
+    y2 <- rexp(n, 1 / (1 + shift))
+    y <- c(y1, y2)
+    g <- rep(c("A", "B"), times = c(m, n))
+
+    # t tests: First for unequal variances
+    result[i, "Welch"] <- t.test(y ~ g)$p.value <= 0.05
+    result[i, "Student"] <- t.test(y ~ g, var.equal = TRUE)$p.value <= 0.05
+    
+    # Permutation test with B = 10000
+    perm_dist <- replicate(1e4, statistic(y, sample(g)))
+    perm_p <- mean(perm_dist >= statistic(y, g))
+    result[i, "Perm"] <- perm_p <= 0.05
+
+    setTxtProgressBar(pb, i)
+  }
+  saveRDS(colMeans(result), file = paste0("simulation/", what, ".rds"))
+}
+
+# Type 1 error
+(type_1_error <- readRDS("simulation/type_1_error.rds"))
+
+# Power under a mean shift of 1
+(Power <- readRDS("simulation/Power.rds"))
+```
+
+**Comment**: In this situation, all tests are somewhat anti-conservative regarding Type 1 error. At the cost of a slightly higher Type 1 error, Welch's t test has clearly the highest power. The permutation test performs somewhere in the middle.
+
+## Further examples
+
+We can use permutation tests to replace almost any parametric or non-parametric test. To end the chapter on statistical inference, will go through the following three situations:
+
+- Wilcoxon's rank sum test
+- Test for Pearson correlation
+- Paired t-test
+
+Many additional tests are available in the "coin" package - some of which do not even have an official name.
+
+### Example: Wilcoxon's rank sum test
+
+We can use permutation tests to mimic classic rank tests like Wilcoxon's rank sum test. To do so, we replace the values by their rank in the pooled sample and then proceed as before.
+
+Let's test the alternative hypothesis that the values in one sample tend to be larger than in the other sample. We will use `withr::with_seed()` to set the random seed only temporarily, without affecting later code.
+
+```{r}
+library(withr)
+
+y1 <- c(1, 1, 1, 2, 3, 4, 5)
+y2 <- c(4, 5, 5, 5, 6, 7, 8, 10)
+
+# Long form
+y <- c(y1, y2)
+g <- rep(c("A", "B"), times = c(length(y1), length(y2)))
+
+# Wilcoxon's rank sum test
+wilcox.test(y ~ g)$p.value
+
+# Permutation test
+statistic <- function(y, g) {
+  r <- rank(y)
+  abs(mean(r[g == "B"]) - mean(r[g == "A"]))
+  # Could also use Wilcoxon's rank-sum statistic
+}
+
+with_seed(
+  38,
+  perm_dist <- replicate(1e4, statistic(y, sample(g)))
+)
+mean(perm_dist >= statistic(y, g))
+
+# Via "coin", using the exact "shift" algorithm by Streitberg and Röhmel (1984)
+library(coin)
+
+wilcox_test(y ~ factor(g), distribution = "exact")
+```
+
+**Comment:** At the 5% level, all tests lead to the same conclusion. Note that the permutation approach has no problem with ties.
+
+### Example: Pearson correlation
+
+Next, we test the null hypothesis of no correlation between two variables $X$ and $Y$.
+
+```{r}
+n <- 40
+x <- seq(0, pi * 9 / 10, length.out = n)
+y <- sin(x)
+
+plot(y ~ x)
+
+# Classic test based on assuming bivariate normality
+cor.test(~ x + y)
+
+# Permutation test
+statistic <- function(x, y) {
+  abs(cor(x, y))
+}
+
+set.seed(98)
+
+perm_dist <- replicate(1e4, statistic(sample(y), x))
+mean(perm_dist >= statistic(x, y))
+
+## Via coin
+library(coin)
+
+independence_test(y ~ x, distribution = approximate(nresample = 10000))
+```
+
+**Comment:** For any of the tests considered, we can reject the null hypothesis of no correlation and claim that there is some association between the two variables.
+
+### Example: Paired samples
+
+Permutation tests can also be used for testing hypotheses on two or more *paired* samples. The package "coin" uses a very general scheme in this case: Data are represented in long form with an additional column "block" to identify the subject. Only "admissible" permutations are done, i.e., permutations within block.
+
+```{r}
+library(coin)
+
+pre <-  c(10, 10, 11, 15, 15, 20, 33, 35, 35)
+post <- c(11, 12, 10, 20, 21, 22, 30, 35, 37)
+
+# One-sample t-test (= t-test for two paired samples)
+t.test(post - pre)
+
+# Coin: Turn data into long form with three columns
+n <- length(pre)
+y <- c(pre, post)
+g <- rep(c("pre", "post"), each = n)
+block <- rep(1:n, times = 2)
+data.frame(y, g, block)
+
+independence_test(y ~ factor(g) | factor(block), distribution = "exact")
+``` 
+**Comment:** The exact permutation test provides a different p value, but in both cases we cannot reject the null hypothesis of equal means.
+
+# Exercises
+
+1. In this exercise, we consider 95%-confidence intervals for the true mean of a uniform distribution.
+    a. Generate a sample of 30 observations from the standard uniform distribution and calculate a Student confidence interval for the true mean $\mu$. Interpret it.
+    b. Calculate the Bootstrap estimate of the standard error and compare it with the usual estimate of the standard error. Plot a histogram of the Bootstrap replications. 
+    c. Use the `plot_stability()` function for the lecture notes to figure out after how many Bootstrap samples the Bootstrap estimate of the standard error would stabilize.
+    d. Calculate a standard normal Bootstrap CI and a percentile Bootstrap CI for $\mu$. Compare with the interval from 1a.
+
+2. Consider the two samples $x_1 = 1, 2, \dots, 21$ and $x_2 = 1, 2, \dots, 51$. 
+    a. Using resampling within groups to calculate a percentile Bootstrap CI for the true median difference $\text{Med}(x_2) - \text{Med}(x_1)$. Interpret the result.
+    b. Calculate an estimate for the parameter of interest and calculate a standard normal Bootstrap CI. Compare the two solutions.
+  
+3. For the situation in Exercise 1, use simulation to calculate real coverage probabilities for the Student CI and the two types of Bootstrap CIs. What do you observe?
+
+4. Here, we study a test on Spearman's rank correlation.
+    a. What is Spearman's rank correlation?
+    b. Write a function `spearman_test2(x, y, B = 10000)` that calculates a one-sided permutation p value for the null hypothesis of no positive monotonic association. I.e.,
+    you want to show that the true rank correlation is positive.
+    c. Use a simulated example to compare with the corresponding p values from the "coin" package, and also using `stats::cor.test(x, y, method = "s", method = "greater")`.
+    
+5. In the situation of Exercise 4: Program a simulation study to compare your approach with `stats::cor.test()` regarding...
+    a. ... Type 1 error? (Work with independent normal random variables)
+    b. ... power? (Work with dependent normal random variables).
+    c. How do you interpret your result?
+
+# Summary
+
+In this chapter, we have revisited some basic results on statistical inference. Then, we met two key players in modern inferential statistics: The Bootstrap to calculate approximate confidence intervals for general parameters, and permutation tests to produce p values for a wide range of hypothesis tests.
+
+# References

@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+taxi/*.parquet
+timing
+1_2_Tidyverse.Rmd
+derby.log
+logs/
+solutions/*.html

@@ -1,0 +1,394 @@
+%=====================================================================
+\section{Statistical Inference}
+%=====================================================================
+
+\begin{frame}
+	\frametitle{Outline}
+	
+	\begin{enumerate}
+		\item Statistical Inference
+		\item The Bootstrap
+		\item Permutation Tests
+	\end{enumerate}
+	
+	\vfill
+	
+	\begin{block}{Aims}
+		\begin{itemize}
+			\item Learn computer-intensive methods in statistical inference
+			\item Apply programming techniques from last chapter
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+%=====================================================================
+\subsection{Statistical Inference}
+%=====================================================================
+
+\begin{frame}
+	\frametitle{Statistical Inference}
+	Use data to make statements about unknown population parameter $\theta$:
+	\begin{itemize}
+		\item True proportion of patients that benefit from some novel treatment
+		\item True average claim count per insured car year
+		\item True correlation coefficient between the price of a diamond and its size
+	\end{itemize}
+	
+	\vfill
+	
+	\begin{block}{Main Tasks}
+		\begin{enumerate}
+			\item Point estimation: Estimate $\theta$ by an estimator $\hat \theta(\text{data})$
+			\item Interval estimation: Provide confidence interval $I(\text{data})$ for $\theta$
+			\item Testing: Use test statistic $T(\text{data})$ to measure statistical evidence against null hypothesis like $\theta_o = 0$. Reject if evidence is strong enough
+		\end{enumerate}
+	\end{block}
+	
+	Math stats solves tasks for different parameters $\theta$, and under different circumstances
+\end{frame}
+
+\begin{frame}
+	\frametitle{Classic Results for the Mean}
+	\begin{itemize}
+		\item Distribution $F$ with $\mu = \E(F)$ and $\sigma = \sqrt{\text{Var}(F)} < \infty$
+		\item Sample $\boldsymbol X = (X_1, \dots, X_n)$ of independent random variables drawn from $F$
+	\end{itemize}
+	
+	\vfill
+	
+	\begin{block}{What can we say about the sample mean $\hat \mu = \frac{1}{n}\sum_{i = 1}^n X_i$ as an estimator of $\mu$?}
+		\begin{enumerate}
+			\item $\hat \mu$ is unbiased: 
+			$$
+			  \E(\hat \mu) = \E\left(\frac{1}{n}\sum_{i = 1}^n X_i\right) = \frac{1}{n}\sum_{i = 1}^n \E(X_i) = \mu
+			$$
+			\item Law of large numbers: As $n\to \infty$, $\hat\mu$ converges in probability to $\mu$
+			\item CLT: For $Z\sim N(0, 1)$ and standard deviation $\sigma(\hat\mu)$ of $\hat\mu$:
+			$$
+			  \frac{\hat\mu - \mu}{\sigma(\hat\mu)} \xrightarrow[n\to \infty]{d} Z
+			$$
+		\end{enumerate}
+	\end{block}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Standard Deviation $\sigma(\hat\mu)$ of the Sample Mean}
+	$$
+	  \sigma(\hat\mu) = \sqrt{\text{Var}(\hat\mu)} = \sqrt{\text{Var}\left(\frac{1}{n} \sum_{i = 1}^n X_i\right)} = \sqrt{\frac{1}{n^2} \sum_{i = 1}^n \text{Var}(X_i)} = \sqrt{\frac{1}{n} \text{Var}(X_i)} = \frac{\sigma}{\sqrt{n}}
+	$$
+	
+	\vfill
+	
+	Since $\sigma = \sigma(F) = \sigma(X_i)$ unknown, replace it by \alert{sample} standard deviation
+	$
+	  \hat\sigma = \sqrt{\frac{1}{n-1}\sum_{i = 1}^{n}(X_i - \hat\mu)^2}
+	$
+	$\rightarrow$ estimated standard deviation of mean: $\hat\sigma(\hat\mu) = \hat\sigma / \sqrt{n}$
+	
+	\vfill
+	
+	\begin{block}{Remarks and outlook}
+		\begin{itemize}
+			\item Standard deviation $\sigma(\hat\theta)$ of estimator called \alert{standard error}
+			\item \alert{Estimated} standard error denoted by $\hat\sigma(\hat\theta)$
+			\item Accuracy of estimator $\rightarrow$ confidence intervals for $\theta$
+			\item Formulas are rare $\rightarrow$ Bootstrap
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Computer Simulations}
+	\begin{exampleblock}{Illustrations via repeated sampling from known(!) distribution}
+		\begin{itemize}
+			\item Law of large numbers
+			\item Central Limit Theorem
+		\end{itemize}
+	\end{exampleblock}
+\end{frame}
+
+\begin{frame}
+	\frametitle{From the CLT to Confidence Intervals (CI)}
+	Approximate $(1-\alpha)\cdot 100\%$-CI for $\mu$:
+	$$
+	  [\hat\mu \pm z_{1-\alpha/2} \hat\sigma(\hat\mu)],
+	$$
+	where $\hat\sigma(\hat\mu) = \hat\sigma / \sqrt{n}$, and $z_\beta$ is the $\beta$-quantile of $N(0,1)$ ($\rightarrow$ lecture notes)
+	
+	\vfill
+	
+	\begin{block}{Remarks}
+		\begin{itemize}
+		\item ``z-confidence interval'' for the mean $\mu$
+		\item Usually more accurate: Student CI with $n-1$ degrees of freedom
+		\item ``Probability'' or ``Confidence''?
+		\end{itemize}
+	\end{block}
+	
+	\begin{exampleblock}{Examples}
+		\begin{itemize}
+			\item z-CI for the mean
+			\item Accuracy: Compare nominal coverage probability $1-\alpha$ and real coverage
+		\end{itemize}
+	\end{exampleblock}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Other Estimators}
+	\begin{itemize}
+		\item Many estimators $\hat \theta$ are asymptotically normal
+		\item We can use the same formula to calculate approximate $(1-\alpha)\cdot 100\%$ CI for $\theta$:
+			$$
+		 		I_{1-\alpha} = [\hat \theta \pm z_{1-\alpha/2} \hat \sigma(\hat\theta)]
+			$$
+	\end{itemize}
+	
+	\vfill
+	
+	\begin{block}{Limitation}
+		Usually, no general formula for $\hat \sigma(\hat\theta)$ available
+	\end{block}
+	
+	\begin{block}{Solution (Bradley Efron, 1979)}
+		\alert{The Bootstrap} offers a fully generic and automatic way of finding $\hat \sigma(\hat\theta)$
+	\end{block}	
+\end{frame}
+
+%=====================================================================
+\subsection{The Bootstrap}
+%=====================================================================
+
+\begin{frame}
+	\frametitle{The Bootstrap}
+	\begin{itemize}
+		\item Observe sample: $\bx = (x_1, \dots, x_n)$
+		\item Standard error $\hat \sigma(\hat\theta)$ of estimator $\hat\theta(\bx)$? 
+	\end{itemize}
+	
+	\begin{block}{Bootstrap estimate of standard error}
+		\begin{enumerate}
+			\item From $\bx$, draw with replacement a \alert{Bootstrap sample} $\bx^*$ of size $n$ 
+			\item Calculate \alert{Bootstrap replication} $\hat \theta(\bx^*)$ of $\hat\theta(\bx)$
+			\item Repeat $B$ times to get $B$ Bootstrap replications $\hat \theta(\bx^{*1}), \dots, \hat \theta(\bx^{*B})$
+			\item Calculate \alert{sample standard deviation} of the $B$ replications
+		\end{enumerate}
+	\end{block}
+	
+	\begin{columns}[onlytextwidth]
+		\column{0.33\textwidth}
+		\begin{exampleblock}{Examples}
+		\begin{itemize}
+			\item Mean
+			\item Median
+		\end{itemize}
+		\end{exampleblock}
+
+	\column{0.67\textwidth}
+	\begin{itemize}
+		\item Why ``Bootstrap''?
+		\item Bootstrap sample is to original sample what 
+		
+		original sample is to population
+	\end{itemize}
+	\end{columns}
+\end{frame}
+
+
+\begin{frame}
+	\frametitle{Bootstrap Confidence Intervals}
+	\begin{block}{Standard normal Bootstrap confidence interval}
+		\begin{itemize}
+			\item Take any asymptotically normal $\hat \theta$
+			\item Approximate $(1-\alpha)\cdot 100\%$-confidence interval for $\theta$:
+				$$
+		 			[\hat \theta \pm z_{1-\alpha/2} \hat \sigma(\hat\theta)]
+				$$
+			\item $\hat \sigma(\hat\theta)$: Bootstrap estimate of standard error
+			\item Sample size not too small
+		\end{itemize}
+	\end{block}
+	
+	\vfill
+	
+	\begin{example}
+	\end{example}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Alternative: Percentile Bootstrap Confidence Interval}
+	\begin{itemize}
+		\item Consider $B$ Bootstrap replications $\hat \theta(\bx^{*1}), \dots, \hat \theta(\bx^{*B})$
+		\item Use empirical $(\alpha/2)$ and $(1-\alpha/2)$ quantiles as confidence limits
+		\item No asymptotic normality of $\hat\theta$ required
+		\item Transformation respecting
+		\item Range-preserving
+		\item Since extreme quantiles involved, use large $B$, e.g., 9999
+	\end{itemize}
+	
+	\begin{exampleblock}{Examples}
+	\begin{itemize}
+		\item Median
+		\item Simulation study on accuracy
+		\item Better confidence intervals
+	\end{itemize}
+	\end{exampleblock}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Multiple Samples/Groups}
+	\begin{block}{Examples}
+		\begin{itemize}
+			\item Mean difference between two groups
+			\item Median difference between two groups
+			\item R-squared of a one-way ANOVA between multiple groups
+		\end{itemize}
+	\end{block}
+
+	\vfill
+	
+	\begin{block}{Two ways of drawing Bootstrap sample}
+		\begin{enumerate}
+			\item Resampling within group to keep group sizes fixed (usually recommended)
+			\item Resample rows in data with one column representing the group (more generic)
+		\end{enumerate}
+	\end{block}
+
+	\vfill
+	
+	\begin{example}
+	\end{example}
+
+\end{frame}
+
+\begin{frame}
+	\frametitle{Multivariate Estimators}
+	\begin{block}{Examples}
+		\begin{itemize}
+			\item Pearson correlation
+			\item Kendall's rank correlation
+			\item R-squared of a linear regression
+			\item Mean difference of two groups (how?)
+		\end{itemize}
+		$\rightarrow$ Study associations between variables
+	\end{block}
+	
+	\vfill
+	
+	\begin{block}{How to create Bootstrap sample?}
+		Sample whole \alert{rows} of dataset (with replacement)
+	\end{block}
+
+	\vfill
+	
+	\begin{example}
+	\end{example}
+
+\end{frame}
+
+\begin{frame}
+	\frametitle{Permutation Tests}
+	First described by R.A. Fisher in 1935!
+	
+	\vfill
+	
+	\begin{block}{Hypotheses tests in general}
+		\begin{itemize}
+			\item Want to show interesting alternative hypothesis $H_1$ about $\theta$, e.g. $\theta \ne 0$
+			\item Measure evidence against contrary $H_0$, e.g. $\theta = 0$ by test statistic $T$
+			\item If evidence is strong enough, reject $H_0$ in favor of $H_1$
+		\end{itemize}
+	\end{block}
+	
+	\begin{block}{p value}
+		Probability of observing at least as much evidence against $H_0$ as in the specific sample when $H_0$ holds $\rightarrow$ reject $H_0$ if p value $\le 0.05$ (or some other prespecified value)
+		$$
+			\text{p value} = P_{H_0}\{T \ge t\}
+		$$
+	\end{block}
+	
+	\begin{example}
+	\end{example}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Tests for Association}
+	
+	Example showed: two-sample t test is test of association between:
+	\begin{itemize}
+		\item $\boldsymbol Y$: Numeric variable representing the stacked values of \alert{both} groups
+		\item $\bX$: Binary variable representing the group (``A'' or ``B'')
+	\end{itemize}
+	
+	Association is measured in terms of location shift in the grouped means
+	
+	\vfill
+	
+	Many additional tests are tests of association between two variables. Examples?
+	
+	\vfill
+	
+	Can be tackled by 
+	\begin{itemize}
+		\item computer-intensive,
+		\item fully automatic
+	\end{itemize}
+	technique called \alert{permutation test}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Permutation Tests}
+	$T$: Measures strength of association between $\bX$ and $\boldsymbol Y$ with observations $\bx$ and $\boldsymbol y$
+	
+	\vfill
+	
+	\begin{block}{How to find distribution of $T$ under null?}
+		\begin{enumerate}
+			\item $\bx^*$: permutation of $\bx$
+			
+			$\rightarrow$ destroys dependency between $\bx$ and $\boldsymbol y$
+			\item Calculate $t^* = T(\bx^*, \boldsymbol y)$
+			\item Repeat above steps $B$ times to get permutation replications $t^*(1), \dots, t^*(B)$
+			
+			$\rightarrow$ empirical null hypothesis distribution of $T$
+			\item Bootstrap p value: $\frac{1}{B}\sum_{i = 1}^B 1\{t^*(i) \ge T(\bx, \boldsymbol y)\}$
+		\end{enumerate}
+	\end{block}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Remarks and Examples}
+	\begin{block}{Remarks}
+		\begin{itemize}
+			\item $B$ large, e.g. $10000$
+			\item Why not all permutations? $\rightarrow$ Approximate or Monte-Carlo permutation tests
+			\item ``coin'' package in R
+			\item Permutation replications versus Bootstrap replications?
+			\item Not completely assumption-free (iid.\ is sufficient)
+		\end{itemize}
+	\end{block}
+	
+	\begin{exampleblock}{Examples}
+		\begin{itemize}
+			\item Two-sample test
+			\item Simulation: Type 1 error and power?
+		\end{itemize}
+	\end{exampleblock}
+\end{frame}
+
+\begin{frame}
+	\frametitle{More Examples}
+	
+	\begin{itemize}
+		\item Wilcoxon's rank sum test
+		\item Test for Pearson correlation
+		\item Paired t-test
+	\end{itemize}
+	
+	\vfill
+	
+	Many more in the ``coin'' package
+\end{frame}
+
+%=====================================================================
+\subsection{Permutation Tests}
+%=====================================================================

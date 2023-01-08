@@ -1,0 +1,20 @@
+---
+title: "iris flowers"
+output: html_document
+---
+
+## The data
+
+The `iris` data contains information on `r nrow(iris)` flowers from three species. Here are the first three rows:
+  
+```{r}
+head(iris, 3)
+```
+
+## A plot
+
+To suppress code in the resulting file, set `echo=FALSE` in the chunk options:
+
+```{r, echo=FALSE}
+plot(Sepal.Width ~ Sepal.Length, col = Species, data = iris)
+```

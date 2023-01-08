@@ -1,0 +1,918 @@
+---
+title: "4. Model Selection and Validation"
+author: "Michael Mayer"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    df_print: paged
+    theme: paper
+    code_folding: show
+    math_method: katex
+subtitle: "Statistical Computing"
+bibliography: biblio.bib
+link-citations: yes
+editor_options: 
+  chunk_output_type: console
+knit: (function(input, ...) {rmarkdown::render(input, output_dir = "docs")})
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  warning = FALSE,
+  message = FALSE,
+  eval = TRUE
+)
+```
+
+# Introduction
+
+In the previous chapter, we have met performance measures like the RMSE or the total deviance to measure how good our models are. Unfortunately, we cannot fully rely on these values due to overfitting: The more our models overfit, the less we can trust in their "in-sample" performance, i.e., the performance on the data used to calculate the models. Selecting models based on their in-sample performance is equally bad. Overfitting should not be rewarded!
+
+In this chapter, we will meet ways to estimate the performance of a model in a fair way and use it to select the best model among alternatives. They are all based on data splitting techniques, where the models are evaluated on fresh data not used for model calculation. A fantastic reference for this chapter is @hastie01statisticallearning. 
+
+Before introducing these techniques, we will fix some notation and meet a competitor of the linear model.
+
+Notation:
+
+- Loss function $L$: Used to measure loss of single observation, e.g. the squared error $L(y, z) = (y - z)^2$.
+- Total loss $Q(f, D) = \sum_{(y_i, \boldsymbol x_i) \in D} L(y_i, f(\boldsymbol x_i))$ of a data set $D$, e.g. the sum of squared errors. Used as objective criterion to fit $f$ on data $D$. Sometimes, the objective also contains a penalty term.
+- Average loss $\bar Q(f, D) = Q(f, D) / |D|$, e.g. the mean-squared error. Easier-to-read version of $Q$ as it does not grow with the sample size $|D|$.
+- Performance measure or evaluation metric $S(f, D)$ of interest, often $S = \bar Q$ or a function of it, e.g. the RMSE. Used to compare models or select hyper-parameters. Ideally consistent with $Q$.
+
+While loss functions are used by the algorithm to *fit* the model, the evaluation metric helps to measure performance and to select models.
+
+# Nearest-neighbor
+
+A very simple and intuitive alternative to the linear model is the $k$-nearest-neighbor approach, originally introduced by Evelyn Fix and J. L. Hodges in an unpublished technical report in 1951. It can be applied for both regression and classification and works without fitting anything. The prediction for an observation is obtained by 
+
+1. searching the closest $k$ neighbors in the data set and then 
+2. combining their responses. 
+
+By "nearest" we usually mean Euclidean distance in the covariate space. If covariates are not on the same scale, it makes sense to *standardize* them first by subtracting the mean and dividing by the standard deviation. Otherwise, distances would be dominated by the covariate on the largest scale. Categorical features need to be one-hot- or integer-encoded first. Note that one-hot-encoded covariates may or may not be standardized.
+
+For regression tasks, the responses of the $k$ nearest neighbors are often combined by computing their arithmetic mean. For classification tasks, they are condensed to their most frequent value or by providing class probabilities.
+
+## Example
+
+What prediction (on logarithmic price scale) would we get with 5-nearest-neighbor regression for the 10'000th row of the diamonds data set?
+
+```{r}
+library(ggplot2)
+library(FNN)
+
+diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+
+y <- "log_price"
+x <- c("log_carat", "color", "cut", "clarity")
+
+# Scaled numeric feature matrix
+X <- scale(data.matrix(diamonds[, x]))
+
+# The 10'000th observation
+diamonds[10000, c("price", "carat", x)]
+
+# Its prediction
+knn.reg(X, test = X[10000, ], k = 5, y = diamonds[[y]])
+
+# Its five nearest neighbors
+neighbors <- c(knnx.index(X, X[10000, , drop = FALSE], k = 5))
+diamonds[neighbors, ]
+```
+
+**Comments** 
+
+- The five nearest diamonds are extremely similar. One of them is the observation of interest itself, introducing a relevant amount of overfitting.
+- The average log price of these five observations gives us the nearest-neighbor prediction for the 10'000th diamond.
+- Would we get better results for a different choice of the number of neighbors $k$?
+- Three lines are identical up to the perspective variables (`depth`, `table`, `x`, `y`, `z`). These rows most certainly represent the same diamond, which leads to an additional overfit. We need to keep this problematic aspect of the diamonds data in mind.
+
+**Motivation for this chapter:** In-sample, a 1-nearest-neighbor regression predicts without error, a consequence of pure overfitting. This hypothetical example indicates that in-sample performance is often not worth a penny. Models need to be evaluated on fresh, independent data not used for model calculation. This leads us to *simple validation*.
+
+# Simple Validation
+
+With simple validation, the original data set is partitioned into a *training* data set $D_\text{train}$ used to calculate the models and a separate *validation* data set $D_\text{valid}$ used to estimate the true model performance and/or to select models. Typically, $10\% - 30\%$ of rows are used for validation. 
+
+We can use the validation performance $S(\hat f, D_\text{valid})$ to compare *algorithms* (e.g., linear regression versus $k$-nearest-neighbor) and also to choose their *hyperparameters* like the $k$ of $k$-nearest-neighbor.
+
+Furthermore, the performance difference $S(\hat f, D_\text{valid}) - S(\hat f, D_\text{train})$ gives an impression on the amount of overfitting (or rather of the *optimism*). Ideally, the difference is small.
+
+## Example
+
+We now use a 80%/20% split on the diamonds data to calculate the RMSE of 5-nearest-neighbor for both the training and the validation data.
+
+```{r}
+library(ggplot2)
+library(FNN)
+library(withr)
+
+diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+
+y <- "log_price"
+x <- c("log_carat", "color", "cut", "clarity")
+
+# Split diamonds into 80% for "training" and 20% for validation
+with_seed(
+  9838,
+  ix <- sample(nrow(diamonds), 0.8 * nrow(diamonds))
+)
+
+y_train <- diamonds[ix, y]
+X_train <- diamonds[ix, x]
+
+y_valid <- diamonds[-ix, y]
+X_valid <- diamonds[-ix, x]
+
+# Standardize training data
+X_train <- scale(data.matrix(X_train))
+
+# Apply training scale to validation data
+X_valid <- scale(
+  data.matrix(X_valid),
+  center = attr(X_train, "scaled:center"),
+  scale = attr(X_train, "scaled:scale")
+)
+
+# Performance
+RMSE <- function(y, pred) {
+  sqrt(mean((y - pred)^2))
+}
+
+pred_train <- knn.reg(X_train, test = X_train, k = 5, y = y_train)$pred
+cat("Training RMSE:", RMSE(y_train, pred_train))
+
+pred_valid <- knn.reg(X_train, test = X_valid, k = 5, y = y_train)$pred
+cat("Validation RMSE:", RMSE(y_valid, pred_valid))
+```
+
+**Comment:** Validation RMSE is substantially worse than training RMSE, a clear sign of overfitting. However, it is still much better than the (full-sample) performance of linear regression (residual standard error was 0.1338).
+
+Can we find a $k$ with better validation RMSE?
+
+```{r}
+library(tidyr)
+
+# Tuning grid with different values for parameter k
+paramGrid <- data.frame(train = NA, valid = NA, k = 1:20)
+    
+# Calculate performance for each row in the parameter grid
+for (i in 1:nrow(paramGrid)) {
+  k <- paramGrid[i, "k"]
+  
+  # Performance on training data
+  pred_train <- knn.reg(X_train, test = X_train, k = k, y = y_train)$pred
+  paramGrid[i, "train"] <- RMSE(y_train, pred_train)
+  
+  # Performance on valid data
+  pred_valid <- knn.reg(X_train, test = X_valid, k = k, y = y_train)$pred
+  paramGrid[i, "valid"] <- RMSE(y_valid, pred_valid)
+}
+
+# Best validation RMSE
+head(paramGrid[order(paramGrid$valid), ], 2)
+
+# Plot results
+pivot_longer(paramGrid, cols = -k, values_to = "RMSE", names_to = "Data") %>% 
+ggplot(aes(x = k, y = RMSE, group = Data, color = Data)) +
+  geom_point() +
+  geom_line()
+```
+
+**Comments**
+
+- The amount of overfitting decreases for growing $k$, which makes sense.
+- Selecting $k$ based on the training data would lead to a suboptimal model.
+- Based on the validation data, we would choose $k=6$. It has a minimal RMSE of 11.29%.
+- Why is the RMSE on the training data not 0 for 1-nearest-neighbor?
+- Why is it problematic that some diamonds appear multiple times in the dataset?
+
+# Cross-Validation (CV)
+
+If our data set is large and training takes long, then the simple validation strategy presented above is usually good enough. For smaller data sets or when training is fast, there is a better alternative that uses the data in a more economical way and makes more robust decisions. It is called $K$-fold cross-validation and works as follows:
+
+1. Split the data into $K$ pieces $D = \{D_1, \dots, D_K\}$ called *folds*. Typical values for $K$ are five or ten.
+2. Set aside one of the pieces ($D_k$) for validation.
+3. Fit the model $\hat f_k$ on all other pieces, i.e., on $D \setminus D_k$.
+4. Calculate the model performance $\hat S_k = S(\hat f_k, D_k)$ on the validation data $D_k$.
+5. Repeat Steps 2 to 4 until each piece was used for validation once.
+6. The average of the $K$ model performances yields the *CV performance* 
+  $$
+    \hat S_{CV} = \frac{1}{K} \sum_{k = 1}^K \hat S_k.
+  $$
+
+The CV performance is a good basis to choose the best and final model among alternatives. **The final model is re-trained on all folds.**
+
+**Notes**
+
+- The "best" model is typically the one with best CV performance. Depending on the situation, it could also be a model with "good CV performance and not too heavy overfit compared to in-sample performance" or some other reasonable criterion.
+- The standard deviation of $\hat S_1, \dots, \hat S_K$, and/or the standard error of $\hat S_{CV}$ gives an impression on the stability of the results.
+- If cross-validation is fast, you can repeat the process for additional data splits. Such *repeated* cross-validation leads to even more robust results.
+
+## Example
+
+We now use five-fold CV on the diamonds data to find the optimal $k$ of $k$-nearest-neighbor, i.e., we *tune* our model.
+
+```{r}
+library(ggplot2)
+library(FNN)
+library(withr)
+
+RMSE <- function(y, pred) {
+  sqrt(mean((y - pred)^2))
+}
+
+diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+
+y <- "log_price"
+x <- c("log_carat", "color", "cut", "clarity")
+
+# Scaled feature matrix
+X <- scale(data.matrix(diamonds[x]))
+
+# Split diamonds into folds
+nfolds <- 5
+with_seed(
+  9838,
+  fold_ix <- sample(1:nfolds, nrow(diamonds), replace = TRUE)
+)
+table(fold_ix)
+
+# Tuning grid with different values for parameter k
+paramGrid <- data.frame(RMSE = NA, k = 1:20)
+    
+# Calculate performance for each row in the parameter grid
+for (i in 1:nrow(paramGrid)) {
+  k <- paramGrid[i, "k"]
+  
+  scores <- numeric(nfolds)
+  
+  for (fold in 1:nfolds) {
+    X_train <- X[fold_ix != fold, ]
+    y_train <- diamonds[fold_ix != fold, y]
+    
+    X_valid <- X[fold_ix == fold, ]
+    y_valid <- diamonds[fold_ix == fold, y]
+
+    pred <- knn.reg(X_train, test = X_valid, k = k, y = y_train)$pred
+    scores[fold] <- RMSE(y_valid, pred)
+  }
+  paramGrid[i, "RMSE"] <- mean(scores)
+}
+
+# Best CV-scores 
+head(paramGrid[order(paramGrid$RMSE), ], 2)
+
+ggplot(paramGrid, aes(x = k, y = RMSE)) +
+  geom_point(color = "chartreuse4") +
+  geom_line(color = "chartreuse4") +
+  ggtitle("Performance by cross-validation")
+```
+
+**Comment:** Using 7 neighbors seems to be the best choice regarding CV RMSE. Again, the fact that certain diamonds show up multiple times leaves a slightly bad feeling. Should we really trust these results?
+
+## Grid Search
+
+In the above example, we have systematically compared the CV-performance of $k$-nearest-neighbor by iterating over a grid of possible values for $k$. Such strategy to *tune* models, i.e., to select hyperparameters of a model is called **grid search CV**. In the next chapter, we will meet situations where multiple parameters have to be optimized simultaneously. Then, the number of parameter combinations and the grid size explode. To save time, we could evaluate only a random subset of parameter combinations, an approach called **randomized search CV**.
+
+# Test Data and Final Workflow
+
+Modeling often requires many decisions to be made. Even when guided by (cross-)validation, each decision tends to make the final model look better than it effectively is, an effect that can be called *overfitting on the validation data*. 
+
+As a consequence, we often do not know how well the final model will perform in reality. As a solution, we can set aside a small *test* data set $D_\text{test}$ used to assess the performance $S(\hat f, D_\text{test})$ of the *final* model $\hat f$. A size of $5\% - 20\%$ is usually sufficient. 
+It is important to look at the test data just once at the very end of the modeling process - after each decision has been made. The difference between $S(\hat f, D_\text{test})$ and the corresponding (cross-)validation score gives an impression of the validation optimism/overfit.
+
+Note: Such an additional test data set is only necessary if one uses the validation data set to *make decisions*. If the validation data set is only used to estimate the true performance of a model, then we do not need this additional data set. In that case, the terms "validation data" and "test data" are interchangeable.
+
+Depending on whether one is performing simple validation or cross-validation, the typical workflow is as follows:
+
+**Workflow A**
+
+1. Split data into train/valid/test, e.g., by ratios 60%/20%/20%.
+2. Train different models on the training data and assess their performance on the validation data. Choose the best model, re-train it on the combination of training and validation data, and call it "final model".
+3. Assess performance of the final model on the test data.
+
+**Workflow B**
+
+1. Split data into train/test, e.g., by ratios 80%/20%.
+2. Evaluate and tune different models by $K$-fold cross-validation on the training data. Select the best model and re-train it on the full training data.
+3. Assess performance of the final model on the test data.
+
+The only difference between the two workflows is whether simple validation or cross-validation is used for decision making.
+
+Remark: For simplicity, Workflow A is sometimes done without refitting on the combination of training and validation data. In that case, the final model is fitted on the training data only.
+
+## Example: Workflow B
+
+We will now follow Workflow B for our diamond price model. We will (1) tune the $k$ of our nearest-neighbor regression and (2) compare its result with a linear regression. The model with best CV performance will be evaluated on the test data.
+
+```{r}
+library(ggplot2)
+library(FNN)
+library(withr)
+
+RMSE <- function(y, pred) {
+  sqrt(mean((y - pred)^2))
+}
+
+diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+
+y <- "log_price"
+x <- c("log_carat", "color", "cut", "clarity")
+
+dia <- diamonds[, c(y, x)]
+# dia <- unique(dia)  #  -> Exercise 2
+
+# Split diamonds into 80% for training and 20% for testing
+with_seed(
+  9838,
+  ix <- sample(nrow(diamonds), 0.8 * nrow(diamonds))
+)
+
+train <- dia[ix, ]
+test <- dia[-ix, ]
+
+y_train <- train[[y]]
+y_test <- test[[y]]
+
+# Standardize training data
+X_train <- scale(data.matrix(train[, x]))
+
+# Apply training scale to test data
+X_test <- scale(
+  data.matrix(test[, x]),
+  center = attr(X_train, "scaled:center"),
+  scale = attr(X_train, "scaled:scale")
+)
+
+# Split training data into folds
+nfolds <- 5
+with_seed(
+  9838,
+  fold_ix <- sample(1:nfolds, nrow(train), replace = TRUE)
+)
+
+# Cross-validation performance of k-nearest-neighbor for k = 1-20
+paramGrid <- data.frame(RMSE = NA, k = 1:20)
+
+for (i in 1:nrow(paramGrid)) {
+  k <- paramGrid[i, "k"]
+  scores <- numeric(nfolds)
+  
+  for (fold in 1:nfolds) {
+    X_train_cv <- X_train[fold_ix != fold, ]
+    y_train_cv <- y_train[fold_ix != fold]
+    
+    X_valid_cv <- X_train[fold_ix == fold, ]
+    y_valid_cv <- y_train[fold_ix == fold]
+    
+    pred <- knn.reg(X_train_cv, test = X_valid_cv, k = k, y = y_train_cv)$pred
+    scores[fold] <- RMSE(y_valid_cv, pred)
+  }
+  paramGrid[i, "RMSE"] <- mean(scores)
+}
+
+# Best CV performance
+head(paramGrid[order(paramGrid$RMSE), ], 2)
+
+# Cross-validation performance of linear regression
+rmse_reg <- numeric(nfolds)
+
+for (fold in 1:nfolds) {
+  fit <- lm(reformulate(x, y), data = train[fold_ix != fold, ])
+  pred <- predict(fit, newdata = train[fold_ix == fold, ])
+  rmse_reg[fold] <- RMSE(y_train[fold_ix == fold], pred)
+}
+(rmse_reg <- mean(rmse_reg))
+
+# The overall best model is 6-nearest-neighbor
+pred <- knn.reg(X_train, test = X_test, k = 6, y = y_train)$pred
+
+# Test performance for the best model
+RMSE(y_test, pred)
+```
+
+**Comments** 
+
+- 6-nearest-neighbor regression performs clearly better than linear regression.
+- Its performance on the independent test data is even better than CV suggests.
+
+# Excursion: Ridge Regression
+
+A ridge regression is a penalized linear regression. It assumes the same model equation 
+$$
+  \mathbb E(Y \mid \boldsymbol x) = f(\boldsymbol x) = \beta_0 + \beta_1 x^{(1)} + \dots + \beta_p x^{(p)}
+$$
+as a "normal" linear regression, but with an L2 penalty added to the least squares criterion:
+$$
+  Q(f, D_{\text{train}}) = \sum_{(y_i, \boldsymbol x_i) \in D_\text{train}} (y_i - f(\boldsymbol x_i))^2 + \lambda \sum_{j = 1}^p \beta_j^2.
+$$
+Adding such an L2 penalty has the effect of pulling the coefficients slightly towards zero, fighting overfitting. The optimal penalization strength is controlled by $\lambda \ge 0$, which usually is determined by simple validation or cross-validation.
+
+**Remarks**
+
+- To avoid biased average predictions, the penalty is usually not applied to the intercept.
+- To make penalization fair between covariates of different scale, the regressors are often standardized to variance 1. Most software do this internally.
+- A model using an L1 penalty $\lambda \sum_{j = 1}^p |\beta_j|$ is called a Lasso model. A model with both L1 and L2 penalties is an "elastic net" model.
+
+## Example: Taxi
+
+To show an example of ridge regression and Workflow A, we revisit the taxi trip example of the last chapter. We first split the data into 70%/20%/10% training/validation/test data. 
+Then, we let H2O use the validation data to find the optimal L2 penalty. Using this penalty, the final model will be fitted on the combination of training and validation data, and then evaluated on the 10% test data.
+
+```{r, eval=FALSE}
+library(arrow)
+library(data.table)
+library(ggplot2)
+library(h2o)
+
+system.time( # 3 seconds
+  dim(df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet"))  
+)
+
+setDT(df)
+head(df)
+
+# Data prep
+system.time({  # 5 seconds
+  df[, duration := as.numeric(
+    difftime(tpep_dropoff_datetime, tpep_pickup_datetime, units = "mins")
+  )]
+  df = df[between(trip_distance, 0.2, 100) & between(duration, 1, 120)]
+  df[, `:=`(
+    pu_hour = factor(data.table::hour(tpep_pickup_datetime)),
+    weekday = factor(data.table::wday(tpep_pickup_datetime)), # 1 = Sunday
+    pu_loc = forcats::fct_lump_min(factor(PULocationID), 1e5),
+    log_duration = log(duration),
+    log_distance = log(trip_distance)
+  )]
+})
+
+x <- c("log_distance", "weekday", "pu_hour", "pu_loc")
+y <- "log_duration"
+
+h2o.init(min_mem_size = "6G")
+
+h2o_df <- as.h2o(df[, c(x, y), with = FALSE])
+h2o_split <- h2o.splitFrame(
+  h2o_df, c(0.7, 0.2), destination_frames = c("train", "valid", "test")
+)
+
+system.time(  # 12 s
+  fit <- h2o.glm(
+    x, "log_duration", 
+    training_frame = "train", 
+    validation_frame = "valid", 
+    lambda_search = TRUE, 
+    alpha = 0  # controls ratio of L1 to L2 penalty strength (0 means no L1)
+  )
+)
+fit  # Validation R2: 0.782; best lambda essentially 0 (no penalty)
+
+# Combine training + validation
+h2o_trainvalid <- h2o.rbind(h2o_split[[1]], h2o_split[[2]])
+
+# Fit model with optimal lambda (0)
+fit_final <- h2o.glm(
+  x, "log_duration", 
+  training_frame = h2o_trainvalid, 
+  validation_frame = "test", 
+  lambda = 0,
+  alpha = 0
+)
+
+fit_final  # Test R^2: 0.7814
+```
+
+**Comment:** According to simple validation, adding an L2 penalty is not necessary. Thus, the final model is fitted without penalty on the pooled 90% training and validation data. Its test R-squared is very similar to the validation R-squared, indicating that there is no problematic overfit on the validation data. Why adding a penalty did not help to improve the model? Usually, ridge regression shines when the $n/p$ ratio is small. In our case, however, it is very large.
+
+# Random Splitting?
+
+The data is often split *randomly* into partitions or folds. As long as the rows are *independent*, this leads to honest estimates of model performance.
+
+However, if the rows are not independent, e.g. for time series data or grouped data, such a strategy is flawed and usually leads to overly optimistic results. **This is a common mistake in modeling.**
+
+## Time-series data
+
+When data represents a time series, splitting is best done in a way that does not destroy the temporal order. For simple validation, e.g., the first 80% of rows could be used for training and the remaining 20% for validation. The specific strategy depends on how the model will be applied.
+
+## Grouped data
+
+Often, data is grouped or clustered by some (hopefully known) ID variable, e.g.,
+
+- multiple rows belong to the same patient/customer or
+- duplicated rows (accidental or not). 
+
+Then, instead of distributing *rows* into partitions, we should distribute *groups*/IDs in order to not destroy the data structure and to get honest performance estimates. We speak of *grouped splitting* and *group K-fold CV*. 
+
+In our example with diamonds data, it would be useful to have a column with diamond "id" that could be used for grouped splitting. (How would you create a proxy for this?)
+
+## Stratification
+
+*If rows are independent*, there is a variant of random splitting that can provide slightly better models: *stratified splitting*. With stratified splitting or stratified K-fold CV, rows are split to enforce similar distribution of a key variable across partitions/folds. Stratified splitting is often used when the response variable is binary and unbalanced. Unbalanced means that the proportion of "1" is close to 0 or 1.
+
+# Excursion: SQL and Spark
+
+> Data science is 80% preparing data, 20% complaining about preparing data.
+
+Data tables are usually stored as files on a hard drive or as tables in a database (DB). Before starting with data analysis and modeling, these tables have to be preprocessed (filter rows, combine tables, restructure, rename, transform, ...). How much preprocessing is required depends strongly on the situation. While this process often feels like a waste of time, it is actually a good opportunity to learn 
+
+- how the data is structured, 
+- what information the columns bear, and
+- what possible sources of bias might be present.
+
+For small data sets, the raw data is usually loaded into R/Python and then preprocessed in memory. For large data sets, this becomes slow or even impossible. One option is to externalize the preprocessing to a database management system (DBMS) with its out-of-core capabilities or to a big data technology like Spark. In this section, we take a short trip into that world.
+
+## SQL
+
+Communication with the database is usually done with *SQL* (Structured Query Language). This is one of the most frequently used programming languages in data science. The SQL code is usually written directly in the DBMS or in R/Python. SQL is pronounced as "es-kiu-el" or "si-kwel".
+
+We will introduce SQL with examples written in the in-process DBMS [DuckDB](duckdb.org). "In-process" means that when DuckDB is run from R/Python, it is embedded in the R/Python process itself. DuckDB is convenient for several reasons:
+
+- It is easy to install.
+- It has no external dependencies.
+- It is fast.
+- It supports working with csv/Parquet files as well as with R/Python tables.
+- It plays well together with Apache Arrow.
+- It works out-of-core, i.e., when data does not fit into RAM.
+
+DuckDB has been released in 2018 as an open-source project written in C++. Later, we will also take a look at Spark, the famous big data technology.
+
+Remark: While there is an ISO norm for SQL, specific implementations (DuckDB, Spark, Oracle, SQL Server, ...) extend this standard command palette, resulting in different dialects. Thus, when googling a command, it will help to add the name of the implementation, like "extract hour from date in spark sql".
+
+### Example: SQL
+
+To familiarize you with SQL, we will write some basic SQL queries (= questions) with DuckDB about the diamond data. (Also remember the "Translator" table of Chapter 1.)
+
+```{r}
+library(duckdb)
+library(tidyverse)
+
+# Initialize virtual DB and register diamonds data
+con = dbConnect(duckdb())
+duckdb_register(con, name = "dia", df = diamonds)
+
+# Select every column (and every row)
+con %>% 
+  dbSendQuery("SELECT * FROM dia") %>% 
+  dbFetch() %>% 
+  head()
+
+# carat and log(price) sorted by carat in descending order
+query <- "
+  SELECT 
+    carat, LOG(price) AS log_price 
+  FROM dia 
+  ORDER BY carat DESC
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch() %>% 
+  head()
+
+# Filter on carat > 2 and color = 'E'
+query <- "
+  SELECT * 
+  FROM dia 
+  WHERE 
+    carat > 2 
+    AND color = 'E'
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch() %>% 
+  head()
+
+# Aggregate
+query <- "
+  SELECT 
+    COUNT(*) AS N
+    , AVG(price) AS avg_price
+    , SUM(price) / 1e6 AS sum_price_mio
+  FROM dia
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch()
+
+# Grouped aggregate
+query <- "
+  SELECT 
+    COLOR
+    , COUNT(*) AS N
+    , AVG(price) AS avg_price
+    , SUM(price) / 1e6 AS sum_price_mio
+  FROM dia
+  GROUP BY color 
+  ORDER BY color
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch()
+
+# Join average price per color to original data as nested query
+# using color as join "key"
+query <- "
+  SELECT *
+  FROM dia D
+  LEFT JOIN 
+  (
+      SELECT color, AVG(price) AS avg_price
+      FROM dia
+      GROUP BY color
+  ) G
+  ON D.color = G.color
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch() %>% 
+  head()
+
+# Instead of nesting, we can use "WITH" to connect multiple queries
+query <- "
+  WITH grouped AS
+  (
+    SELECT color, AVG(price) AS avg_price
+    FROM dia
+    GROUP BY color
+  )
+  SELECT *
+  FROM dia D
+  LEFT JOIN GROUPED G
+    ON D.color = G.color
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch() %>% 
+  head()
+
+# Some SQL implementations also offer "Window" functions to do things like this
+query <- "
+  SELECT *, AVG(price) OVER (PARTITION BY color) AS avg_price
+  FROM dia
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch() %>% 
+  head()
+
+dbDisconnect(con)
+```
+
+### Example: Taxi
+
+Here we will work directly with the taxi Parquet file. The goal is to answer the following four questions/tasks:
+
+1. How do the first five rows look like?
+2. How many rows does the table have?
+3. Which pickup location IDs occur at least 100,000 times?
+4. Prepare the data similar to our original workflow "Parquet -> Arrow -> data.table".
+
+```{r}
+library(duckdb)
+library(tidyverse)
+
+con = dbConnect(duckdb())
+
+# Show first five rows of Parquet file
+query <- "
+  SELECT *
+  FROM 'taxi/yellow_tripdata_2018-01.parquet'
+  LIMIT 5
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch()
+
+# How many rows does the file have?
+query <- "
+  SELECT COUNT(*) AS N 
+  FROM 'taxi/yellow_tripdata_2018-01.parquet'
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch() 
+
+# Pickup location IDs with at least 100'000 rows
+# 'HAVING' is like a 'WHERE', but after a GROUP BY
+query <- "
+  SELECT 
+    PULocationID AS pu_loc
+    , COUNT(*) AS N
+  FROM 'taxi/yellow_tripdata_2018-01.parquet'
+  GROUP BY PULocationID
+  HAVING N >= 100000
+"
+con %>% 
+  dbSendQuery(query) %>% 
+  dbFetch() %>% 
+  head()
+
+# Prepare taxi model data directly from Parquet
+query <- "
+  WITH LOC AS (
+    SELECT 
+      PULocationID AS pu_loc
+      , COUNT(*) AS N
+    FROM 'taxi/yellow_tripdata_2018-01.parquet'
+    GROUP BY PULocationID
+    HAVING N >= 100000
+  )
+  SELECT 
+    LOG(trip_distance) AS log_distance
+    , LOG(DATE_DIFF('minutes', tpep_pickup_datetime, tpep_dropoff_datetime)) AS log_duration
+    , DAYNAME(tpep_pickup_datetime) AS weekday
+    , EXTRACT(hour FROM tpep_pickup_datetime) as pu_hour
+    , COALESCE(L.pu_loc, 'Other') AS pu_loc
+  FROM 'taxi/yellow_tripdata_2018-01.parquet' A
+  LEFT JOIN LOC L
+  ON A.PULocationID = L.pu_loc
+  WHERE 
+    trip_distance BETWEEN 0.2 AND 100
+    AND DATE_DIFF('minutes', tpep_pickup_datetime, tpep_dropoff_datetime) BETWEEN 1 AND 120
+"
+system.time(
+  df <- con %>% 
+    dbSendQuery(query) %>% 
+    dbFetch() 
+)
+
+head(df)
+```
+
+**Comment:** The last query provides essentially the same model data as via Arrow and "data.table". Can you see differences?
+
+## Spark
+
+[Apache Spark](https://spark.apache.org/) is an open-source, distributed processing system used for working with big data. It has been part of the Apache Software Foundation since 2013 and is used extensively in industry. Its SQL engine can be used to process data of any size, also from within R or Python. Spark is written in the programming language "Scala", which is being developed at EPFL Lausanne under the direction of Martin Odersky, the creator of Scala.
+
+Spark normally runs on a cluster consisting of many hundreds of nodes (= computers). For illustration purposes, however, we will use a normal laptop here, i.e. a "cluster" with only one node.
+
+### Example: Diamonds
+
+Let's start a local Spark instance and apply some small queries to the diamond data. We will use both SQL and "dplyr" code, which will then be translated into Spark.
+
+```{r, eval=FALSE}
+library(tidyverse)
+library(DBI)
+library(sparklyr)
+# spark_install("3.2")
+
+# Local Spark instance
+sc <- spark_connect(master = "local")
+
+# Register data on Spark
+dia <- copy_to(sc, diamonds)
+
+# SQL commands refer to Spark name "diamonds"
+dbGetQuery(sc, "SELECT COUNT(*) AS N FROM diamonds")
+# 53940
+
+query <- "
+  SELECT 
+    color
+    , COUNT(*) AS N
+    , AVG(price) AS mean_price
+  FROM diamonds 
+  GROUP BY color 
+  ORDER BY color
+"
+dbGetQuery(sc, query)
+
+#   color     N mean_price
+# 1     D  6775   3169.954
+# 2     E  9797   3076.752
+# 3     F  9542   3724.886
+# 4     G 11292   3999.136
+# 5     H  8304   4486.669
+# 6     I  5422   5091.875
+# 7     J  2808   5323.818
+
+# dplyr style translated to Spark -> refer to R name "dia"
+dia %>% 
+  group_by(color) %>% 
+  summarise(N = count(), mean_price = mean(price)) %>% 
+  arrange(color)
+
+#   color     N mean_price
+#   <chr> <dbl>      <dbl>
+# 1 D      6775      3170.
+# 2 E      9797      3077.
+# 3 F      9542      3725.
+# 4 G     11292      3999.
+# 5 H      8304      4487.
+# 6 I      5422      5092.
+# 7 J      2808      5324.
+
+# "Window" functions are available as well
+query <- "
+  SELECT color, price, AVG(price) OVER (PARTITION BY color) AS avg_price
+  FROM diamonds
+  LIMIT 2
+"
+dbGetQuery(sc, query)
+ 
+#   color price avg_price
+# 1     D   357  3169.954
+# 2     D   402  3169.954
+
+# The same in dplyr style
+dia %>%
+  select(color, price) %>% 
+  group_by(color) %>% 
+  mutate(avg_price = mean(price)) %>% 
+  ungroup() %>% 
+  head(2)
+ 
+#   color price avg_price
+#   <chr> <int>     <dbl>
+# 1 D       357     3170.
+# 2 D       402     3170.
+  
+spark_disconnect(sc)
+```
+
+### Example: Taxi
+
+As with DuckDB, working with one or multiple Parquet files is simple.
+
+```{r, eval=FALSE}
+library(tidyverse)
+library(DBI)
+library(sparklyr)
+
+sc <- spark_connect(master = "local")
+
+# Link to Parquet file
+df <- spark_read_parquet(
+  sc, name = "taxi", path = "taxi/yellow_tripdata_2018-01.parquet"
+)
+
+# SQL style
+query <- "
+  SELECT
+    CEILING(trip_distance) AS distance
+    , COUNT(*) AS N 
+  FROM taxi
+  WHERE trip_distance > 0 AND trip_distance <= 10
+  GROUP BY CEILING(trip_distance)
+  ORDER BY CEILING(trip_distance)
+"
+dbGetQuery(sc, query)
+
+#    distance       N
+# 1         1 2541387
+# 2         2 2876845
+# 3         3 1253871
+# 4         4  584633
+# 5         5  320221
+# 6         6  207796
+# 7         7  143839
+# 8         8  106956
+# 9         9  102622
+# 10       10  100274
+
+# Same with dplyr syntax (translated to Spark)
+df %>% 
+  filter(trip_distance <= 10, trip_distance > 0) %>% 
+  group_by(distance = ceiling(trip_distance)) %>% 
+  count() %>%
+  arrange(distance)
+
+#    distance       n
+#       <dbl>   <dbl>
+#  1        1 2541387
+#  2        2 2876845
+#  3        3 1253871
+#  4        4  584633
+#  5        5  320221
+#  6        6  207796
+#  7        7  143839
+#  8        8  106956
+#  9        9  102622
+# 10       10  100274
+
+spark_disconnect(sc)
+```
+
+# Exercises
+
+1. Use simple validation to determine whether a linear regression for `log(price)` with covariates `log(carat)`, `color`, `cut`, and `clarity` is better with or without interaction between `log(carat)` and `cut` regarding RMSE. Use a 80/20 data split. Make sure that the code is fully reproducible. 
+
+2. Use 5-fold cross-validation to select the best polynomial degree to represent `log(carat)` in a Gamma GLM for diamonds prices with log-link (with additional covariates `color`, `cut`, and `clarity`). Evaluate the result on 10% test data. Use the average Gamma deviance as performance measure (function `deviance_gamma()` in the package "MetricsWeighted"). Again make sure that the code is fully reproducible.
+
+3. How does repeated CV work? List one advantage and one disadvantage compared to standard cross-validation. When would you recommend grouped cross-validation and why? How does it work?
+
+4. Use DuckDB or Apache Spark to write SQL queries about the claims data. We need some definitions first: In insurance, the *pure premium* is defined as the ratio of the total claim amount and the total exposure. Exposure is usually measured in years (1 = 1 year). The pure premium is the fictive premium per unit of exposure required to cover the claims. The claim frequency is the ratio of the total claim number and the total exposure. Finally, the claim severity is the ratio of total claim amount and total claim number. Consequently: pure premium = frequency * severity.
+    a. Calculate total exposure, pure premium, frequency and severity on the full data.
+    b. Do the same stratified by the age category of the driver. Sort the results by "agecat". Interpret the results.
+    c. How many distinct values does the column "X_OBSTAT_" have? Use the "DISTINCT" keyword in SQL.
+    d. Add to the full data a binary column "female" (1 = yes, 0 = no) derived from "gender". Use the "CASE WHEN" clause. Can you avoid the "CASE WHEN" construction here?
+
+# Summary
+
+In this chapter, we have learned strategies to estimate model performance in a fair way. These strategies are used for model selection and tuning. As such, they are an essential part of the full modeling process. Furthermore, we have met the script language SQL to preprocess data of any size using technologies like DuckDB and Apache Spark.
+
+# References
