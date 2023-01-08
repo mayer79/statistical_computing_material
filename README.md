@@ -15,13 +15,31 @@ The lecture has six chapters:
 
 Chapters 3 to 6 can be summarized as "Statistical ML in Action". 
 
-Each chapter will keep us busy for two weeks. At the end of each chapter, you will find exercises. 
+Each chapter will keep us busy for two weeks (3 hours + 1 hour exercises).
    
 ## Prerequisites
 
-We will work with R version >= 4.1, and RStudio/Posit. 
+### Lecture material
 
-In the first two chapters, we will need these R packages:
+Fetch everything by running
+
+```
+git clone https://github.com/mayer79/statistical_computing_material.git
+```
+
+in your Git console, or by downloading everything as Zip file.
+
+### Large data
+
+Download the large dataset "January 2022 - Yellow Taxi Trip Records" from [](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page) or use the direct download [link](https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-01.parquet).
+
+Place it in the project subfolder "taxi/".
+
+### Software
+
+We will work with R version >= 4.1 and RStudio/Posit. 
+
+In the first two chapters, we will need these additional R packages:
 
 - tidyverse
 - plotly
@@ -47,13 +65,10 @@ For the remaining chapters, we further need this list:
 - flashlight
 - keras (see below)
 
-In the last chapter, to use keras, we additionally need Python with TensorFlow. You can install it by running the R command `keras::install_keras()`. If the following code works, you are all set. (Some red messages/warnings are okay.)
+For the last chapter, we additionally need Python with TensorFlow. You can install it by running the R command `keras::install_keras()`. If the following code works, you are all set. (Some red messages/warnings are okay.)
 
 ```
 library(keras)
-
-# Path to conda env with TensorFlow
-# use_condaenv(path_to_conda_env)
 
 input <- layer_input(shape = 3)
 
@@ -97,4 +112,4 @@ This lecture is being distributed under the [creative commons license](https://c
 
 ## How to cite?
 
-Michael Mayer. Statistical Computing, lecture notes (2022).
+Michael Mayer. Statistical Computing, Lecture notes (2023).

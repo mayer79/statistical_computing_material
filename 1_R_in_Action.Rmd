@@ -53,24 +53,25 @@ In the first section, our focus is on *data preparation* and *descriptive analys
 
 Let's start with a small selection of helpful functions in base R for data preparation and descriptive analysis:
 
-- `subset()`: Select rows and columns
-- `transform()`: Modify and add columns
-- `aggregate()`: Grouped calculations
+- `subset()`: Select rows and columns of data frame
+- `transform()`: Add or overwrite columns in data frame
+- `aggregate()`, `tapply()`, `rowsum()`, `by()`: Grouped calculations
 - `ave()`: Grouped transformations
-- `rbind()`, `cbind()`: Bind rows/columns
-- `merge()`: Join by key
-- `expand.grid()`: Cross-join lists/data.frames
-- `head()`, `tail()`: First/last few rows
-- `nrow()`, `ncol()`, `dim()`: Number of rows/columns
-- `order()`: Sort data
-- `rowSums()`, `rowMeans()`: Row-wise sums/means
-- `colSums()`, `colMeans()`: Column-wise sums/means
-- `reshape()`: Transposition/Reshaping (tricky interface)
-- `lapply()`: Apply a function column-wise
-- `str()`: Structure of object, e.g., a data frame
+- `rbind()`, `cbind()`: Bind rows/columns of data frame/matrix
+- `merge()`: Join data frames by key
+- `expand.grid()`: Cross-join lists/data frames
+- `head()`, `tail()`: First/last few elements of object
+- `nrow()`, `ncol()`, `dim()`: Number of rows/columns of data frame/matrix
+- `order()`, `rank()`: Sort indices, ranks
+- `rowSums()`, `rowMeans()`: Row-wise sums/means of data frame/matrix
+- `colSums()`, `colMeans()`: Column-wise sums/means data frame/matrix
+- `cumsum()`, `cummean()`: Cumulative sums and means of vector
+- `reshape()`: Transposition/Reshaping of data frame (tricky interface)
+- `lapply()`: Apply function element-wise, e.g., per column of data frame
+- `str()`: Structure of object, e.g., of a data frame
 - `summary()`: Summarizes object, e.g., each column in a data frame
 - `mean()`, `median()`, `sd()`, `quantile()`, `min()`, `max()`: Univariate statistics
-- `table()`, `prop.table()`, `addmargins()`: Absolute and relative counts of discrete column
+- `table()`, `prop.table()`, `addmargins()`: Absolute and relative counts
 - `cor()`, `cov()`: Bivariate statistics 
 - `hist()`, `barplot()`, `boxplot()`, `plot()`: Some plot functions
 
@@ -320,16 +321,13 @@ library(tidyverse)
 ggplot(data = diamonds, mapping = aes(x = color)) +
   geom_bar(fill = "chartreuse4")
 
-# A histogram -> save as object "p" to modify it later
+# A histogram -> store as object "p" to modify it later
 p <- ggplot(diamonds, aes(x = price)) +
   geom_histogram(fill = "chartreuse4", bins = 30)
 p
 
-# "Add" log scale and labels
-p + 
-  scale_x_log10() +
-  ggtitle("Histogram of price (log scale)") +
-  xlab("price on log scale")
+# "Add" title
+p + ggtitle("Histogram of price")
 
 # Boxplot of price per color
 p <- ggplot(diamonds, mapping = aes(x = color, y = price)) +
@@ -340,7 +338,7 @@ p
 p + theme_gray(base_size = 15)
 
 # Attention: + ylim() would clip the data *before* calculating statistics
-# It is better to clip the coordinate system:
+# It is usually better to clip the coordinate system:
 p + coord_cartesian(ylim = c(0, 8000))
 
 # Scatterplot of price against carat (on log-log scale)
@@ -369,9 +367,8 @@ diamonds %>%
   select(price, carat) %>% 
   pivot_longer(everything()) %>% 
 ggplot(aes(value)) +
-  geom_histogram(fill = "chartreuse4", bins = 20) +
-  facet_wrap(~ name, scale = "free_x") +
-  scale_x_log10()
+  geom_histogram(fill = "chartreuse4", bins = 29) +
+  facet_wrap(~ name, scale = "free_x")
 ```
 
 Another strength of "ggplot2" is that we can map columns not only to x and y coordinates, but also to aspects such as color, fill, alpha (transparency), shape, linetype and size:
@@ -389,13 +386,13 @@ ggplot(diamonds, mapping = aes(x = carat, y = price, color = clarity)) +
 
 Another fantastic plotting library is [Plotly](https://plotly.com/). It provides *interactive* plots. Plotly is written in JavaScript and is available in R through the "plotly" package. Unlike "ggplot2", it is not based on the "graphics" package of base R.
 
-The "plotly" package offers two ways to create the plots: We can either work with the native Plotly syntax or use the function `ggplotly()` to translate (most) ggplot objects. We will use the latter.
+The "plotly" package offers two ways to create the plots: We can either work with the native Plotly syntax or use the function `ggplotly()` to translate (most) "ggplot" objects. We will show the latter:
 
 ```{r}
 library(tidyverse)
 library(plotly)
 
-# An interactive barplot written in ggplot style (mind the outer parentheses)
+# Mind the outer parentheses
 (ggplot(diamonds, mapping = aes(color)) +
   geom_bar(fill = "chartreuse4")) %>% 
   ggplotly()
@@ -584,7 +581,7 @@ b <- a %% b  # GCD(a, b) unaffected by modulo
 b <- a %% b  # a modulo b
 ```
 
-Our final version of the function `gcd()` uses *input checks*. Note: for very large numbers above $2^{50}$, the function starts to return garbage because of floating point issues.
+Our final version of the function `gcd()` uses *input checks*. Note: for very large numbers above $2^{50}$, the function would start to return garbage because of floating point issues.
 
 ```r
 # Greatest common divisor
@@ -674,7 +671,7 @@ bar_plot <- function(xvar) {
 bar_plot("color")
 ```
 
-As a second example, we write a function to show mean diamond prices per factor level, along with error bars ($\pm 1$ standard deviations). 
+As a second example, we write a function to show mean diamond prices per factor level, along with standard deviations. 
 
 ```{r}
 library(tidyverse)
@@ -766,7 +763,7 @@ This construction is often used in R.
 
 1. Load the data `dataCar` from the package "insuranceData". It represents claim data on vehicle insurance policies from 2004 to 2005. Some variables like "gender" describe the policy holder, others like "veh_age" the vehicle, and some variables carry information on claims, e.g. "numclaims". Each row represents policy information valid in a certain time window. Use the pipe, "dplyr", and "ggplot2" to solve the following tasks.
     a. Draw barplots of the discrete variables "numclaims", "agecat" (categorized driver age), and "gender".
-    b. Draw a histogram of the vehicle value "veh_value" (in 10'000 Australian Dollars) without logarithms. Truncate values above 7 (this means: if a value is larger than 7, set it to 7).
+    b. Draw a histogram of the vehicle value "veh_value" (in 10'000 Australian Dollars). Truncate values above 7 (this means: if a value is larger than 7, set it to 7).
     c. Calculate the average number of claims per level of "agecat" and visualize the result as a scatterplot. Interpret the result.
     d. Bin "veh_value" into quartiles and analyze its association with the number of claims as in 1c.
     e. Use the "plotly" package to turn the plot from d. interactive.
