@@ -31,7 +31,7 @@ in your Git console, or by downloading everything as Zip file.
 
 ### Large data
 
-Download the large dataset "January 2022 - Yellow Taxi Trip Records" from [](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page) or use the direct download [link](https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-01.parquet).
+Download the large dataset "January 2022 - Yellow Taxi Trip Records" from [this page](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page) or use the direct download [link](https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-01.parquet).
 
 Place it in the project subfolder "taxi/".
 
