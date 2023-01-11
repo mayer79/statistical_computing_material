@@ -1,5 +1,7 @@
 # Statistical Computing <img src='logo.png' align="right" height="200" /></a>
 
+### Lecture Notes
+
 #### Michael Mayer
 
 ## Organization
