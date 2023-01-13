@@ -123,7 +123,7 @@ unlist(get_weights(nn))
 
 # Plot effect of carat on average price
 data.frame(carat = seq(0.3, 3, by = 0.1)) %>% 
-  mutate(price = predict(nn, carat)) %>% 
+  mutate(price = predict(nn, carat, verbose = 0)) %>% 
 ggplot(aes(x = carat, y = price)) +
   geom_line(color = "chartreuse4") +
   geom_point(color = "chartreuse4")
@@ -205,7 +205,7 @@ nn %>% fit(
 
 # Plot effect of carat on average price
 data.frame(carat = seq(0.3, 3, by = 0.1)) %>% 
-  mutate(price = predict(nn, carat)) %>% 
+  mutate(price = predict(nn, carat, verbose = 0)) %>% 
 ggplot(aes(x = carat, y = price)) +
   geom_line(color = "chartreuse4") +
   geom_point(color = "chartreuse4")
@@ -269,7 +269,7 @@ nn %>% fit(
 
 # Plot effect of carat on average price
 data.frame(carat = seq(0.3, 3, by = 0.1)) %>% 
-  mutate(price = predict(nn, carat)) %>% 
+  mutate(price = predict(nn, carat, verbose = 0)) %>% 
 ggplot(aes(x = carat, y = price)) +
   geom_line(color = "chartreuse4") +
   geom_point(color = "chartreuse4")
@@ -459,14 +459,13 @@ fl <- flashlight(
   data = test, 
   label = "Neural net", 
   metrics = list(rmse = rmse, `R squared` = r_squared),
-  predict_function = function(m, X) predict(m, prep_nn(X), batch_size = 1000)
+  predict_function = function(m, X) 
+    predict(m, prep_nn(X), batch_size = 1000, verbose = 0)
 )
 
 # Performance on validation data
 perf <- light_performance(fl)
 perf$data
-plot(perf, fill = "chartreuse4") +
-  labs(x = element_blank(), y = element_blank())
 
 # Variable importance?
 
@@ -655,7 +654,8 @@ fl <- flashlight(
     RMSE = rmse, 
     `R squared` = r_squared
   ),
-  predict_function = function(m, X) predict(m, prep_nn(X), batch_size = 50000)
+  predict_function = function(m, X)
+    predict(m, prep_nn(X), batch_size = 50000, verbose = 0)
 )
 
 # Performance on test data
