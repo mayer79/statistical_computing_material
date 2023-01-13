@@ -1,4 +1,4 @@
-# Statistical Computing <img src='logo.png' align="right" height="200" /></a>
+# Statistical Computing <img src='figs/logo.png' align="right" height="200" /></a>
 
 ### Lecture Notes
 
@@ -39,7 +39,7 @@ Place it in the project subfolder "taxi/".
 
 ### Software
 
-We will work with R version >= 4.1 and RStudio/Posit. 
+We will work with R version >= 4.1 and RStudio. 
 
 In the first two chapters, we will need these additional R packages:
 
