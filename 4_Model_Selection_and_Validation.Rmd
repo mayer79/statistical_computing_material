@@ -322,17 +322,14 @@ diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 y <- "log_price"
 x <- c("log_carat", "color", "cut", "clarity")
 
-dia <- diamonds[, c(y, x)]
-# dia <- unique(dia)  #  -> Exercise 2
-
 # Split diamonds into 80% for training and 20% for testing
 with_seed(
   9838,
   ix <- sample(nrow(diamonds), 0.8 * nrow(diamonds))
 )
 
-train <- dia[ix, ]
-test <- dia[-ix, ]
+train <- diamonds[ix, ]
+test <- diamonds[-ix, ]
 
 y_train <- train[[y]]
 y_test <- test[[y]]
