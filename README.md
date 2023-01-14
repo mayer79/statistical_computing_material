@@ -41,7 +41,7 @@ Place it in the project subfolder "taxi/".
 
 We will work with R version >= 4.1 and RStudio. 
 
-In the first two chapters, we will need these additional R packages:
+In the first two chapters, we will need these contributed R packages:
 
 - tidyverse
 - plotly
@@ -51,7 +51,7 @@ In the first two chapters, we will need these additional R packages:
 - boot
 - coin
 
-For the remaining chapters, we further need this list:
+For the remaining chapters, we further need:
 
 - h2o (large package)
 - arrow
@@ -63,36 +63,14 @@ For the remaining chapters, we further need this list:
 - ranger
 - xgboost
 - lightgbm
-- MetricsWeighted
 - flashlight
-- keras (see below)
+- keras (large, see below)
 
-For the last chapter, we additionally need Python with TensorFlow. You can install it by running the R command `keras::install_keras()`. If the following code works, you are all set. (Some red messages/warnings are okay.)
+For the last chapter, we additionally need Python with TensorFlow >= 2.11. You can install it by running the R command `keras::install_keras(version = "release-cpu")`. If the following code works, you are all set. (Some red start-up messages/warnings are okay.)
 
 ```
-library(keras)
-
-input <- layer_input(shape = 3)
-
-output <- input %>%  
-  layer_dense(5, activation = "relu") %>%  
-  layer_dense(1)
-
-simple_model <- keras_model(input, output)
-
-simple_model %>% 
-  compile(
-    loss = "mse", 
-    optimizer = optimizer_adam(learning_rate = 0.2)
-  )
-
-simple_model %>% 
-  fit(
-    x = data.matrix(iris[2:4]),
-    y = iris[, 1],
-    epochs = 20,
-    batch_size = 10
-  )
+library(tensorflow)
+tf$constant("Hello Tensorflow!")
 ```
 
 ## Further Material
@@ -114,4 +92,4 @@ This lecture is being distributed under the [creative commons license](https://c
 
 ## How to cite?
 
-Michael Mayer. Statistical Computing, Lecture notes (2023).
+Michael Mayer (2023), *Statistical Computing*, lecture notes, Institute of Mathematical Statistics and Actuarial Science, University of Bern.
