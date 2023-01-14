@@ -58,11 +58,11 @@ Mathematical statistics provides the theory to perform these tasks for different
 
 To revisit the basics of classical statistical inference, we summarize some important results for the mean. 
 
-Let $\mu = \mathbb E(F)$ denote the true mean of a distribution $F$ with standard deviation $\sigma = \sqrt{\text{Var}(F)} < \infty$. Usually, $F$, $\mu$, and $\sigma$ are all unknown. Furthermore, let $\boldsymbol X = (X_1, \dots, X_n)$ be a sample of independent random variables drawn from $F$.
+Let $\mu = \mathbb E(F)$ denote the true mean of a distribution $F$ with standard deviation $\sigma = \sqrt{\text{Var}(F)} < \infty$. Usually, $F$, $\mu$, and $\sigma$ are all unknown. Furthermore, let $\boldsymbol X = (X_1, \dots, X_n)$ be a sequence of independent random variables, each with distribution $F$.
 
-What can we say about the sample mean $\hat \mu = \frac{1}{n}\sum_{i = 1}^n X_i$ as an estimator of $\mu$?
+What can we say about the sample mean $\hat \mu = \frac{1}{n}\sum_{i = 1}^n X_i$ viewed as a random variable?
 
-1. The sample mean $\hat \mu$ is unbiased: 
+1. The sample mean $\hat \mu$ is an unbiased estimator of $\mu$: 
 $$
   \mathbb E(\hat \mu) = \mathbb E\big(\frac{1}{n}\sum_{i = 1}^n X_i\big) = \frac{1}{n}\sum_{i = 1}^n \mathbb E(X_i) = \mu.
 $$
@@ -140,7 +140,7 @@ for (n in c(1, 10, 50, 200)) {
 **Comments:**
 
 - The larger the sample size $n$, the more normal the histograms of the means appear. The difference between $n = 50$ and $n = 200$ is barely visible.
-- The case $n=1$ simply shows the histogram of a standard exponential variate. It is very asymmetric and non-normal.
+- The case $n=1$ simply shows the histogram corresponding to a standard exponential distribution. It is very asymmetric and non-normal.
 - Note that the sum of exponential random variables is Gamma distributed.
 
 ### From the CLT to confidence intervals
@@ -176,7 +176,7 @@ where $\hat\sigma(\hat\mu) = \hat\sigma / \sqrt{n}$ is the estimated standard er
 
 #### Example: CI for $\mu$
 
-Let's use again a sample of exponential values to calculate an approximate 95% confidence interval for the true mean $\mu$.
+Let's use a sample of values drawn from an exponential distribution to calculate an approximate 95% confidence interval for the true mean $\mu$.
 
 ```{r}
 set.seed(1)
@@ -211,7 +211,7 @@ c(t.test(x)$conf.int)  # What does c() do here?
 - With about 95% confidence, the true mean lies between 0.7369 and 1.2312. 
 - The Student confidence interval is slightly wider, but might be more accurate.
 
-**Accuracy**: In theory, the accuracy of a confidence interval for a parameter $\theta$ can be assessed as the difference between nominal coverage probability $1 - \alpha$ and *real* coverage probability. The latter can be estimated by repeated sampling as follows: Draw many samples, calculate their confidence intervals and then calculate the proportion of intervals that contain $\theta$. In practice, we only have access to one sample and $\theta$ is unknown, so we cannot calculate the real coverage probability and have to trust the nominal value.
+**Accuracy**: In theory, the accuracy of a confidence interval for a parameter $\theta$ can be assessed as the difference between its nominal coverage probability $1 - \alpha$ and its *real* coverage probability. The latter can be estimated by repeated sampling as follows: Draw many samples, calculate their confidence intervals and then calculate the proportion of intervals that contain $\theta$. In practice, we only have access to one sample and $\theta$ is unknown, so we cannot calculate the real coverage probability and have to trust the nominal value.
 
 #### Example: Accuracy of the CI
 
@@ -256,11 +256,11 @@ ggplot(results[1:100, ], aes(x = rank(estimate), y = estimate, color = ok)) +
   )
 ```
 
-**Comments:** Based on 10'000 resamples, we estimate the real coverage probability as 93%, which is lower than the stated one (95%). This undesirable property might be a consequence of the skeweness of the data distribution. (In the plot, five of 100 confidence intervals do not cover $\mu=1$.)
+**Comments:** Based on 10'000 samples, we estimate the real coverage probability as 93%, which is lower than the stated one (95%). This undesirable property might be a consequence of the skeweness of the data distribution. (In the plot, five of 100 confidence intervals do not cover $\mu=1$, corresponding to a real coverage probability of exactly 95%.)
 
 ## Other estimators
 
-So far, we have been mainly concerned with the sample mean. What about other estimators to estimate other parameters? 
+So far, we have been mainly concerned with the sample mean. What about estimators of other parameters? 
 
 Many estimators $\hat \theta$ are asymptotically normal. Then, following the same logic as with the sample mean, approximate $(1-\alpha)\cdot 100\%$ confidence intervals for their parameter $\theta$ are given by
 $$
@@ -384,15 +384,15 @@ ggplot(data.frame(Median = boot), aes(x = Median)) +
 plot_stability(boot)
 ```
 
-**Comment:** In this example, around 1000 resamples would have been enough to find a stable Bootstrap estimate of the standard error of the median. In contrast to the last example on the mean, we cannot compare with a "standard" estimate - we have to rely on the validity of the Bootstrap. A stability curve can be plotted in all situations.
+**Comment:** In this example, around 1000 resamples would have been enough to find a stable Bootstrap estimate of the standard error of the median. In contrast to the last example on the mean, we cannot compare with a "standard" estimate - we have to rely on the validity of the Bootstrap. Note: Such stability curve can be plotted in all situations.
 
 ## Bootstrap confidence intervals
 
 The Bootstrap gives us a convenient way to estimate the standard error $\sigma(\hat \theta)$ of any estimator $\hat \theta$. Assuming asymptotic normality of $\hat \theta$, we can calculate standard normal $(1-\alpha)\cdot 100\%$-confidence intervals
 $$
-  [\hat \theta \pm z_{1-\alpha/2} \hat \sigma(\hat\theta)],
+  [\hat \theta \pm z_{1-\alpha/2} \hat \sigma(\hat\theta)]
 $$
-using the Bootstrap estimate of the standard error as $\hat \sigma(\hat\theta)$. 
+for $\theta$, using the Bootstrap estimate of the standard error as $\hat \sigma(\hat\theta)$. 
 
 ### Example: Median
 
@@ -553,12 +553,12 @@ Many interesting estimators are calculated from two or more samples, e.g., from 
 - Median difference between two samples
 - R-squared of a one-way ANOVA between multiple groups
 
-The logic for applying the Bootstrap is as before: resample $B$ times with replacement, calculate the $B$ Bootstrap replications, and then use these $B$ values to calculate standard errors and/or confidence intervals.
+The logic for applying the Bootstrap is as before: resample $B$ times with replacement, calculate the $B$ Bootstrap replications of the estimator, and then use these $B$ values to calculate standard errors and/or confidence intervals.
 
 There are two options to perform the resampling:
 
-1. By resampling within sample. This keeps the sample sizes fixed.
-2. By resampling rows in a dataset with the group represented as a column. (Like this, we turn the multi-group situation into a multivariate situation, see below.)
+1. Resample within group. This keeps the group sizes fixed.
+2. Resample rows in a dataset with the group represented by a column. (Like this, we turn the multi-group situation into a multivariate situation, see below.)
 
 Option 1 is usually preferred.
 
@@ -571,33 +571,33 @@ library(ggplot2)
 
 set.seed(1)
 
-nx <- 15
-ny <- 25
+m <- 15
+n <- 25
 
-x <- rexp(nx, 1 / 2)
-y <- rexp(ny, 1)
+y1 <- rexp(m, 1 / 2)
+y2 <- rexp(n, 1)
 
 # Plot data
-df <- data.frame(value = c(x, y), group = rep(c("x", "y"), times = c(nx, ny)))
+df <- data.frame(value = c(y1, y2), group = rep(c("A", "B"), times = c(m, n)))
 ggplot(df, aes(group, value, fill = group)) +
   geom_boxplot(varwidth = TRUE, show.legend = FALSE) +
   scale_fill_viridis_d(begin = 0.5, end = 0.9)
   
-# Estimate for true mean(x) - mean(y)
-estimator <- function(x, y) {
-  mean(x) - mean(y)
+# Estimate for true mean(y1) - mean(y2)
+estimator <- function(y1, y2) {
+  mean(y1) - mean(y2)
 }
-(est <- estimator(x, y))
+(est <- estimator(y1, y2))
 
 # Welch's Student confidence interval for unequal variances
-c(t.test(x, y)$conf.int)
+c(t.test(y1, y2)$conf.int)
 
 # Bootstrap CIs by resampling within each group
 boot <- replicate(
   9999,
   estimator(
-    sample(x, replace = TRUE), 
-    sample(y, replace = TRUE)
+    sample(y1, replace = TRUE), 
+    sample(y2, replace = TRUE)
   )
 )
 
@@ -612,7 +612,7 @@ est + c(-1, 1) * qnorm(0.975) * sd(boot)
 quantile(boot, c(0.025, 0.975))
 ```
 
-**Comment:** The two bootstrap intervals differ considerably, and are much narrower than the student interval. We do not know which of the three intervals is the best. Since we know the true distributions of x and y in this example, we could again perform a simulation study and calculate the accuracy of the intervals based on the difference between the actual and nominal coverage probabilities. In practice, this is not possible because the true distributions are unknown. Otherwise we wouldn't need statistics, after all!
+**Comment:** The two bootstrap intervals differ considerably, and are much narrower than the student interval. We do not know which of the three intervals is the best. Since we know the true distributions of the two samples in this example, we could again perform a simulation study and calculate the accuracy of the intervals based on the difference between the actual and nominal coverage probabilities. In practice, this is not possible because the true distributions are unknown. Otherwise we wouldn't need statistics, after all!
 
 ## Multivariate estimators
 
@@ -689,18 +689,18 @@ m <- 20
 n <- 40
 
 # Values in groups A and B
-y_A <- rexp(m, 1)
-y_B <- rexp(n, 1 / 2)
+y1 <- rexp(m, 1)
+y2 <- rexp(n, 1 / 2)
 
 # Long form
-y <- c(y_A, y_B)
-g <- rep(c("A", "B"), times = c(m, n))
-data.frame(y, g)[18:22, ]
+y <- c(y1, y2)
+x <- rep(c("A", "B"), times = c(m, n))
+data.frame(y, x)[18:22, ]
 
-boxplot(y ~ g, col = "chartreuse4", varwidth = TRUE)
+boxplot(y ~ x, col = "chartreuse4", varwidth = TRUE)
 
 # We should actually use the default option var.equal = FALSE
-t.test(y ~ g, var.equal = TRUE)
+t.test(y ~ x, var.equal = TRUE)
 
 # Calculate p value "by hand" (why multiply with 2?)
 2 * (1 - pt(abs(-2.3297), df = m + n - 2))
@@ -755,8 +755,7 @@ y <- c(y1, y2)
 x <- rep(c("A", "B"), times = c(m, n))
 
 statistic <- function(x, y) {
-  mean_difference <- mean(y[x == "B"]) - mean(y[x == "A"])
-  abs(mean_difference)
+  abs(mean(y[x == "B"]) - mean(y[x == "A"]))
 }
 
 # Calculate approximate null distribution
@@ -960,11 +959,11 @@ independence_test(y ~ factor(x) | factor(block), distribution = "exact")
     c. Use the `plot_stability()` function of the lecture notes to figure out after how many Bootstrap samples the Bootstrap estimate of the standard error would stabilize.
     d. Calculate a standard normal Bootstrap CI and a percentile Bootstrap CI for $\mu$. Compare with the interval from 1a.
 
-2. Consider the two samples $x_1 = 1, 2, \dots, 21$ and $x_2 = 1, 2, \dots, 51$. 
-    a. Using resampling within groups to calculate a percentile Bootstrap CI for the true median difference $\text{Med}(x_2) - \text{Med}(x_1)$. Interpret the result.
-    b. Calculate an estimate for the parameter of interest and calculate a standard normal Bootstrap CI. Compare the two solutions.
+2. Consider the two samples $y_1 = 1, 2, \dots, 21$ and $y_2 = 1, 2, \dots, 51$. 
+    a. Resample within groups to calculate a percentile Bootstrap CI for the true median difference $\theta = \text{Med}(y_2) - \text{Med}(y_1)$. Interpret the result.
+    b. Calculate a standard normal Bootstrap CI for $\theta$. Compare the two solutions.
   
-3. For the situation in Exercise 1, use simulation to calculate real coverage probabilities for the Student CI and the two types of Bootstrap CIs. What do you observe?
+3. For the situation in Exercise 1, use simulation to estimate real coverage probabilities of the Student CI and the two types of Bootstrap CIs. What do you observe?
 
 4. Here, we study a test on Spearman's rank correlation.
     a. What is Spearman's rank correlation?
@@ -972,7 +971,7 @@ independence_test(y ~ factor(x) | factor(block), distribution = "exact")
     you want to show the alternative hypothesis that the true rank correlation is positive.
     c. Use a simulated example to compare with the corresponding p values from the "coin" package, and also using `stats::cor.test(x, y, method = "s", method = "greater")`.
     
-5. In the situation of Exercise 4: Program a simulation study to compare your approach with `stats::cor.test()` regarding...
+5. In the situation of Exercise 4: Use simulation to compare your approach with `stats::cor.test()` regarding...
     a. ... Type 1 error? (Work with independent normal random variables)
     b. ... power? (Work with dependent normal random variables).
     c. How do you interpret your result?
