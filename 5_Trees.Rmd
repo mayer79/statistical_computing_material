@@ -705,12 +705,12 @@ if (tune) {
     setTxtProgressBar(pb, i)
   
     # Save grid to survive hard crashs
-    saveRDS(grid, file = "gridsearch/diamonds_xgb.rds")
+    saveRDS(grid, file = "simulation/diamonds_xgb.rds")
   }
 }
 
 # Load grid and select best iteration
-grid <- readRDS("gridsearch/diamonds_xgb.rds")
+grid <- readRDS("simulation/diamonds_xgb.rds")
 grid <- grid[order(grid$cv_score), ]
 head(grid)
 
