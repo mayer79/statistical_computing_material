@@ -659,7 +659,7 @@ if (tune) {
     showsd = FALSE, 
     print_every_n = 50
   )
-  cvm   # -> a lr of 0.1 provides about 190 trees, which is a convenient amount
+  cvm   # -> a lr of 0.1 provides about 200 trees, which is a convenient amount
    
   # Final grid search after some iterations
   grid <- expand.grid(
@@ -914,7 +914,7 @@ if (FALSE) {  # Set to true to refit
 # Performance on test data
 pred <- predict(fit_lgb, data.matrix(X_test))
 rmse(y_test, pred) # 0.3014
-r_squared(y_test, pred, reference_mean = mean(y_train))  # 82.3%
+r_squared(y_test, pred, reference_mean = mean(y_train))
 
 # Variable importance regarding MSE improvement
 imp <- lgb.importance(model = fit_lgb)
