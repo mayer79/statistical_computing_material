@@ -535,7 +535,9 @@ gcd <- function(a, b) {
 }
 
 # Example
-gcd(45, 12)  # 3
+a <- 45
+b <- 12
+gcd(a, b)  # 3
 a  # unchanged 45
 ```
 
