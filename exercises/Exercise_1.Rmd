@@ -1,0 +1,90 @@
+---
+title: "Exercise Chapter 1"
+author: "Tobias Hugentobler"
+date: "22.02.2023"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    df_print: paged
+    theme: paper
+    code_folding: show
+    math_method: katex
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  warning = FALSE,
+  message = FALSE, 
+  fig.height = 5,
+  fig.width = 6,
+  eval = TRUE
+)
+```
+
+## Exercise 1
+
+```{r}
+library(tidyverse)
+library(insuranceData)
+library(plotly)
+
+data(dataCar)
+
+str(dataCar)
+head(dataCar)
+```
+
+### a)
+
+```{r}
+
+  dataCar %>% ggplot(mapping = aes(x = numclaims)) +
+    geom_bar(fill = "navyblue")
+
+  dataCar %>% ggplot(mapping = aes(x = agecat)) +
+    geom_bar(fill = "navyblue")
+    
+  dataCar %>% ggplot(mapping = aes(x = gender)) +
+    geom_bar(fill = "navyblue")
+```
+
+### b)
+```{r}
+dataCar %>% mutate(veh_value = (veh_value > 7)*7 + veh_value*(veh_value <= 7)) %>% 
+  arrange(-veh_value) %>% 
+  ggplot(mapping = aes(veh_value)) +
+  geom_histogram(fill = "navyblue")
+```
+### c)
+```{r}
+dataCar %>%
+  group_by(agecat) %>% 
+  summarize(avg_claims = mean(numclaims)) %>% 
+  ggplot(mapping = aes(x = agecat, y = avg_claims)) +
+  geom_point(fill = "navy")
+```
+The older the owner the smaller the average claim gets. That makes sense, since younger driver may drive more reckless than older people.
+
+### d)
+```{r}
+summary(dataCar$veh_value)
+```
+
+
+```{r}
+plot <- dataCar %>% mutate(veh_value_bin = ntile(veh_value, n=4)) %>% 
+  group_by(veh_value_bin) %>% 
+  summarize(avg_claims = mean(numclaims)) %>% 
+  ggplot(mapping = aes(x = veh_value_bin, y = avg_claims)) +
+  geom_point(fill = "navy")
+
+plot
+```
+The higher the price of the car, the higher are the average claims.
+
+```{r}
+(plot) %>% ggplotly()
+```
+
+

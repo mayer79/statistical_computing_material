@@ -225,6 +225,15 @@ diamonds %>%
   select(log_price, log_carat) %>% 
   head(2)
 
+#same output
+diamonds %>% 
+  filter(carat > 2) %>% 
+  transmute(
+    log_price = log(price),
+    log_carat = log(carat)
+  ) %>% 
+  head(2)
+
 # Median carat and price
 diamonds %>% 
   summarize(
@@ -246,7 +255,7 @@ med
 diamonds %>%
   select(price, starts_with("c")) %>% 
   left_join(med, by = "clarity") %>%
-  head(2)
+  head()
 
 # Directly with a grouped mutate (imagine this without pipe...)
 diamonds %>%
@@ -331,7 +340,7 @@ p + ggtitle("Histogram of price")
 
 # Boxplot of price per color
 p <- ggplot(diamonds, mapping = aes(x = color, y = price)) +
-  geom_boxplot(fill = "chartreuse4", varwidth = TRUE)
+  geom_boxplot(fill = "chartreuse4", varwidth = TRUE) #varwidth shows widht corresponding to number of points
 p
 
 # Same but with larger text. Other settings can be changed by + theme()
@@ -339,7 +348,7 @@ p + theme_gray(base_size = 15)
 
 # Attention: + ylim() would clip the data *before* calculating statistics
 # It is usually better to clip the coordinate system:
-p + coord_cartesian(ylim = c(0, 8000))
+p + coord_cartesian(ylim = c(0, 8000)) #functions to change the coordinate system
 
 # Scatterplot of price against carat (on log-log scale)
 p <- ggplot(diamonds, mapping = aes(x = carat, y = price)) +
@@ -365,10 +374,10 @@ Combining faceting with data reshaping, we can draw histograms of multiple varia
 ```{r}
 diamonds %>% 
   select(price, carat) %>% 
-  pivot_longer(everything()) %>% 
+  pivot_longer(everything()) %>% ###need that to do faceting!!
 ggplot(aes(value)) +
   geom_histogram(fill = "chartreuse4", bins = 29) +
-  facet_wrap(~ name, scale = "free_x")
+  facet_wrap(~ name, scale = "free_x", ncol = 1)
 ```
 
 Another strength of "ggplot2" is that we can map columns not only to x and y coordinates, but also to aspects such as color, fill, alpha (transparency), shape, linetype and size:
