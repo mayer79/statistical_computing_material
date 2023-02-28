@@ -24,6 +24,8 @@ knitr::opts_chunk$set(
 
 ## Exercise 1
 
+Load the data `dataCar` from the package "insuranceData". It represents claim data on vehicle insurance policies from 2004 to 2005. Some variables like "gender" describe the policy holder, others like "veh_age" the vehicle, and some variables carry information on claims, e.g. "numclaims". Each row represents policy information valid in a certain time window. Use the pipe, "dplyr", and "ggplot2" to solve the following tasks.
+
 ```{r}
 library(tidyverse)
 library(insuranceData)
@@ -36,6 +38,8 @@ head(dataCar)
 ```
 
 ### a)
+
+Draw barplots of the discrete variables "numclaims", "agecat" (categorized driver age), and "gender".
 
 ```{r}
 
@@ -50,6 +54,9 @@ head(dataCar)
 ```
 
 ### b)
+
+Draw a histogram of the vehicle value "veh_value" (in 10'000 Australian Dollars). Truncate values above 7 (this means: if a value is larger than 7, set it to 7).
+
 ```{r}
 dataCar %>% mutate(veh_value = (veh_value > 7)*7 + veh_value*(veh_value <= 7)) %>% 
   arrange(-veh_value) %>% 
@@ -57,6 +64,9 @@ dataCar %>% mutate(veh_value = (veh_value > 7)*7 + veh_value*(veh_value <= 7)) %
   geom_histogram(fill = "navyblue")
 ```
 ### c)
+
+Calculate the average number of claims per level of "agecat" and visualize the result as a scatterplot. Interpret the result.
+
 ```{r}
 dataCar %>%
   group_by(agecat) %>% 
@@ -64,9 +74,13 @@ dataCar %>%
   ggplot(mapping = aes(x = agecat, y = avg_claims)) +
   geom_point(fill = "navy")
 ```
+
 The older the owner the smaller the average claim gets. That makes sense, since younger driver may drive more reckless than older people.
 
 ### d)
+
+Bin "veh_value" into quartiles and analyze its association with the number of claims as in 1c.
+
 ```{r}
 summary(dataCar$veh_value)
 ```
@@ -84,13 +98,17 @@ plot
 
 The higher the price of the car, the higher are the average claims.
 
+### e)
+
+Use the "plotly" package to turn the plot from d. interactive.
+
 ```{r}
 (plot) %>% ggplotly()
 ```
 
 ## Exercise 3
 
-[The Sieve of Eratostheses](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes)
+The sieve of Eratosthenes is an ancient algorithm to get all prime numbers up to any given limit $n$, see [Wikipedia](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes). Write a function `sieve_of_eratosthenes(n)` that returns all prime numbers up to $n$. Benchmark the results for $n = 10^5$  with the package "microbenchmark". Mind your coding style!
 
 ```{r}
 
@@ -128,8 +146,12 @@ ggplot2::autoplot(res)
 
 ## Exercise 4
 
+In Exercise 1c, we have calculated and plotted the average number of claims per level of "agecat" in the `dataCar` data.
+    a. Write a function `avg_claim_counts(v)` that provides such a visualization for any discrete variable `v`.
+    b. Extend this function with a second argument `interactive` to control whether the resulting plot is interactive or not.
+
 ```{r}
-avg_claim_counts <- function(v, interactive){
+avg_claim_counts <- function(v, interactive=FALSE){
   plot <- dataCar %>%
     group_by(across(all_of(v))) %>% 
     summarize(avg_claims = mean(numclaims)) %>% 
@@ -143,4 +165,36 @@ avg_claim_counts <- function(v, interactive){
   return(plot)
 }
 ```
+
+## Exercise 5
+
+Extend the “student” class from Section “plot, print, summary” by the optional information “semester”. It represents the number of semesters the student is already registered. Add a summary() method that would neatly print the name and the semester of the student.
+
+```{r}
+student <- function(given_name, family_name, semester = NULL) {
+  out <- list(
+    given_name = given_name,
+    family_name = family_name,
+    semester = semester
+  )
+  class(out) <- "student"
+  out
+}
+
+summary.student <- function(object){
+  cat("Name: ", object$given_name, " ", object$family_name, "\n")
+  cat("Semester: ", object$semester, "\n")
+}
+
+#other option to set a Method for a class
+
+# setMethod("summary", "student", function(object) {
+#   cat("Name: ", object$given_name, " ", object$family_name, "\n")
+#   cat("Semester: ", object$semester, "\n")
+# })
+
+me <- student("Tobias", "Hugentobler", 2)
+summary(me)
+```
+
 
