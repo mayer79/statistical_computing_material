@@ -81,10 +81,66 @@ plot <- dataCar %>% mutate(veh_value_bin = ntile(veh_value, n=4)) %>%
 
 plot
 ```
+
 The higher the price of the car, the higher are the average claims.
 
 ```{r}
 (plot) %>% ggplotly()
 ```
 
+## Exercise 3
+
+[The Sieve of Eratostheses](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes)
+
+```{r}
+
+sieve_of_eratostheses <- function(n){
+  sieve = !logical(n)
+  i = 2
+  while(i <= sqrt(n)){
+    if(sieve[i]){
+      j = i^2
+      while(j<=n){
+        sieve[j]=FALSE
+        j = j+i
+      }
+    }
+    i = i+1
+  }
+  out = which(sieve %in% TRUE)
+  out = out[out!=1]
+  return(out)
+}
+
+```
+
+```{r}
+library(microbenchmark)
+
+res <- microbenchmark(sieve_of_eratostheses(10^5), times=100)
+```
+
+
+```{r}
+print(res)
+ggplot2::autoplot(res)
+```
+
+## Exercise 4
+
+```{r}
+avg_claim_counts <- function(v, interactive){
+  plot <- dataCar %>%
+    group_by(across(all_of(v))) %>% 
+    summarize(avg_claims = mean(numclaims)) %>% 
+    ggplot(mapping = aes(x = .data[[v]], y = avg_claims)) +
+    geom_point(fill = "navy")
+  
+  if(interactive){
+    plot <- (plot) %>% ggplotly()
+  }
+  
+  return(plot)
+}
+```
 
