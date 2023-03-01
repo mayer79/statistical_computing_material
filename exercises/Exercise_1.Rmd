@@ -62,6 +62,16 @@ dataCar %>% mutate(veh_value = (veh_value > 7)*7 + veh_value*(veh_value <= 7)) %
   arrange(-veh_value) %>% 
   ggplot(mapping = aes(veh_value)) +
   geom_histogram(fill = "navyblue")
+
+#alternative
+dataCar %>%
+  mutate(veh_value = pmin(7, veh_value)) %>% #pmin is rowwise_min but much more efficient 
+  ggplot(aes(veh_value)) +
+  geom_histogram(fill = "orange") +
+  labs(
+    title = "Histogram of vehicle Values",
+    x = "Behicle value[10'000] AUD"
+  )
 ```
 ### c)
 
@@ -87,11 +97,13 @@ summary(dataCar$veh_value)
 
 
 ```{r}
-plot <- dataCar %>% mutate(veh_value_bin = ntile(veh_value, n=4)) %>% 
+plot <- dataCar %>% 
+  mutate(veh_value_bin = ntile(veh_value, n=4)) %>% 
   group_by(veh_value_bin) %>% 
   summarize(avg_claims = mean(numclaims)) %>% 
   ggplot(mapping = aes(x = veh_value_bin, y = avg_claims)) +
   geom_point(fill = "navy")
+
 
 plot
 ```

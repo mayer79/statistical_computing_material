@@ -597,7 +597,7 @@ Our final version of the function `gcd()` uses *input checks*. Note: for very la
 # a, b: positive integers
 gcd <- function(a, b) {
   stopifnot(
-    length(a) == 1, 
+    "a should be a single number" = length(a) == 1, #outputs a warning message
     length(b) == 1,
     a >= 1,
     b >= 1,
@@ -719,13 +719,16 @@ Let's look at two of the many behaviors of `plot()`:
 library(ggplot2)
 
 # plot() applied to object of class "formula"
+# the plot function looks at the class of the object price~color and then calls the function plot.formula
 class(price ~ color)
 plot(price ~ color, data = diamonds)
+graphics:::plot.formula
 
 # plot() applied to object of class "factor". 
 # Note: the first class "ordered" is skipped as it does not have its own plot method
 class(diamonds$color)
 plot(diamonds$color)
+graphics:::plot.factor
 ```
 
 This so-called S3 object oriented system works roughly like this: The generic function calls `UseMethod()`, which selects the class-specific *method* of the form `[generic].[class]()`, which is then being invoked. In above situation, `plot()` calls `UseMethod()`, which then calls `plot.factor()`.
