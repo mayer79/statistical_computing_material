@@ -614,9 +614,9 @@ quantile(boot, c(0.025, 0.975))
 
 **Comment:** The two bootstrap intervals differ considerably, and are much narrower than the student interval. We do not know which of the three intervals is the best. Since we know the true distributions of the two samples in this example, we could again perform a simulation study and calculate the accuracy of the intervals based on the difference between the actual and nominal coverage probabilities. In practice, this is not possible because the true distributions are unknown. Otherwise we wouldn't need statistics, after all!
 
-## Multivariate estimators
+## Multivariate situations
 
-By resampling *rows* in a dataset, we can also work with other multivariate estimators such as the Pearson correlation, Kendall's rank correlation or the R-squared of a linear regression. This allows to study and measure associations between two or more variables using the Bootstrap.
+By resampling *rows* in a dataset, we can also work with other multivariate situations such as the Pearson correlation, Kendall's rank correlation or the R-squared of a linear regression. This allows to study and measure associations between two or more variables using the Bootstrap.
 
 ### Example: Pearson correlation
 
