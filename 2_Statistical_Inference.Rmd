@@ -680,7 +680,7 @@ If the p value is lower or equal to some prespecified significance level $\alpha
 
 ### Example: t-test
 
-Let's illustrate above concepts by the two-sample t test. Under the null hypothesis of equal population means, assuming both normality and equal variance, its test statistic (the standardized mean difference) follows a t distribution with $n + m - 2$ degrees of freedom. $n$ and $m$ are the sample sizes of the two groups.
+Let's illustrate above concepts by the two-sample t-test. Under the null hypothesis of equal population means, assuming both normality and equal variance, its test statistic (the standardized mean difference) follows a t distribution with $n + m - 2$ degrees of freedom. $n$ and $m$ are the sample sizes of the two groups.
 
 ```{r}
 set.seed(8)
@@ -706,18 +706,18 @@ t.test(y ~ x, var.equal = TRUE)
 2 * (1 - pt(abs(-2.3297), df = m + n - 2))
 ```
 
-**Comment:** The sample mean is clearly larger in group B than in group A. What can we say about the true difference $\theta$ between corresponding population means? The t test gives a p value of 0.023. At the 5% significance level, we can therefore reject the null hypothesis of equal population means.
+**Comment:** The sample mean is clearly larger in group B than in group A. What can we say about the true difference $\theta$ between corresponding population means? The t-test gives a p value of 0.023. At the 5% significance level, we can therefore reject the null hypothesis of equal population means.
 
 ### Tests for association
 
-The code in the previous example indicates something conceptually important: A two-sample t test can be viewed as a test of association between to variables:
+The code in the previous example indicates something conceptually important: A two-sample t-test can be viewed as a test of association between to variables:
 
 - $\boldsymbol Y$: Numeric variable representing the stacked values of *both* groups
 - $\boldsymbol X$: Binary variable representing the group ("A" and "B")
 
 The association between $\boldsymbol X$ and $\boldsymbol Y$ is measured in terms of a location shift in the grouped means.
 
-Not only the two-sample t test, but many additional parametric and non-parametric tests can be seen as tests for association between two variables. Such tests (and actually, many more) can be tackled by a computer-intensive and fully automatic technique: **Permutation tests**.
+Not only the two-sample t-test, but many additional parametric and non-parametric tests can be seen as tests for association between two variables. Such tests (and actually, many more) can be tackled by a computer-intensive and fully automatic technique: **Permutation tests**.
 
 ## Permutation tests
 
@@ -783,7 +783,7 @@ grid()
 
 ### Assessing the quality of a test
 
-In the last example, we have compared the permutation test with the classic t test for equal variances. In the specific case, it is difficult to judge which of the two approaches is better. In our artificial example with simulated data, we can use repeated sampling to calculate Type 1 error and power of the two tests.
+In the last example, we have compared the permutation test with the classic t-test for equal variances. In the specific case, it is difficult to judge which of the two approaches is better. In our artificial example with simulated data, we can use repeated sampling to calculate Type 1 error and power of the two tests.
 
 - Type 1 error: Probability to reject correct $H_0$.
 - Power: Probability to correctly reject wrong $H_0$ (for specific alternative). 1 minus Type 2 error.
@@ -792,7 +792,7 @@ The Type 1 error should be close to the stated significance level, while the pow
 
 #### Simulation
 
-Let's calculate Type 1 error and power for above artificial situation. We consider the classic t test for equal variance, the permutation test, and also Welch's t test for unequal variances. It is similar to the classic t test, but with corrected degrees of freedom (and usually the recommended of the two parametric t tests). 
+Let's calculate Type 1 error and power for above artificial situation. We consider the classic t-test for equal variance, the permutation test, and also Welch's t-test for unequal variances. It is similar to the classic t-test, but with corrected degrees of freedom (and usually the recommended of the two parametric t-tests). 
 
 To calculate Type 1 error, we simulate the two samples from the same exponential distribution. To calculate power, we draw them from exponential distributions with a mean difference of 1. Other mean differences would lead to other powers.
 
@@ -822,7 +822,7 @@ if (FALSE) {  # Set to TRUE to rerun
     y <- c(y1, y2)
     x <- rep(c("A", "B"), times = c(m, n))
 
-    # t tests: First for unequal variances
+    # t-tests: First for unequal variances
     result[i, "Welch"] <- t.test(y ~ x)$p.value <= 0.05
     result[i, "Student"] <- t.test(y ~ x, var.equal = TRUE)$p.value <= 0.05
     
@@ -843,7 +843,7 @@ if (FALSE) {  # Set to TRUE to rerun
 (Power <- readRDS("simulation/Power.rds"))
 ```
 
-**Comment**: In this situation, all tests are somewhat anti-conservative regarding Type 1 error. At the cost of a slightly higher Type 1 error, Welch's t test has clearly the highest power. The permutation test performs somewhere in the middle.
+**Comment**: In this situation, all tests are somewhat anti-conservative regarding Type 1 error. At the cost of a slightly higher Type 1 error, Welch's t-test has clearly the highest power. The permutation test performs somewhere in the middle.
 
 ## Further examples
 

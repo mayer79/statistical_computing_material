@@ -3790,7 +3790,7 @@ level <span class="math inline">\alpha</span> (often 0.05), we reject
 <div id="example-t-test" class="section level3" number="4.1.1">
 <h3><span class="header-section-number">4.1.1</span> Example:
 t-test</h3>
-<p>Let’s illustrate above concepts by the two-sample t test. Under the
+<p>Let’s illustrate above concepts by the two-sample t-test. Under the
 null hypothesis of equal population means, assuming both normality and
 equal variance, its test statistic (the standardized mean difference)
 follows a t distribution with <span class="math inline">n + m - 2</span>
@@ -3833,7 +3833,7 @@ t.test(y ~ x, var.equal = TRUE)</code></pre>
 <pre><code>## [1] 0.02332464</code></pre>
 <p><strong>Comment:</strong> The sample mean is clearly larger in group
 B than in group A. What can we say about the true difference <span class="math inline">\theta</span> between corresponding population
-means? The t test gives a p value of 0.023. At the 5% significance
+means? The t-test gives a p value of 0.023. At the 5% significance
 level, we can therefore reject the null hypothesis of equal population
 means.</p>
 </div>
@@ -3841,7 +3841,7 @@ means.</p>
 <h3><span class="header-section-number">4.1.2</span> Tests for
 association</h3>
 <p>The code in the previous example indicates something conceptually
-important: A two-sample t test can be viewed as a test of association
+important: A two-sample t-test can be viewed as a test of association
 between to variables:</p>
 <ul>
 <li><span class="math inline">\boldsymbol Y</span>: Numeric variable
@@ -3852,7 +3852,7 @@ representing the group (“A” and “B”)</li>
 <p>The association between <span class="math inline">\boldsymbol
 X</span> and <span class="math inline">\boldsymbol Y</span> is measured
 in terms of a location shift in the grouped means.</p>
-<p>Not only the two-sample t test, but many additional parametric and
+<p>Not only the two-sample t-test, but many additional parametric and
 non-parametric tests can be seen as tests for association between two
 variables. Such tests (and actually, many more) can be tackled by a
 computer-intensive and fully automatic technique: <strong>Permutation
@@ -3951,7 +3951,7 @@ grid()</code></pre>
 <h3><span class="header-section-number">4.2.2</span> Assessing the
 quality of a test</h3>
 <p>In the last example, we have compared the permutation test with the
-classic t test for equal variances. In the specific case, it is
+classic t-test for equal variances. In the specific case, it is
 difficult to judge which of the two approaches is better. In our
 artificial example with simulated data, we can use repeated sampling to
 calculate Type 1 error and power of the two tests.</p>
@@ -3965,10 +3965,10 @@ while the power should be as large as possible.</p>
 <div id="simulation" class="section level4" number="4.2.2.1">
 <h4><span class="header-section-number">4.2.2.1</span> Simulation</h4>
 <p>Let’s calculate Type 1 error and power for above artificial
-situation. We consider the classic t test for equal variance, the
-permutation test, and also Welch’s t test for unequal variances. It is
-similar to the classic t test, but with corrected degrees of freedom
-(and usually the recommended of the two parametric t tests).</p>
+situation. We consider the classic t-test for equal variance, the
+permutation test, and also Welch’s t-test for unequal variances. It is
+similar to the classic t-test, but with corrected degrees of freedom
+(and usually the recommended of the two parametric t-tests).</p>
 <p>To calculate Type 1 error, we simulate the two samples from the same
 exponential distribution. To calculate power, we draw them from
 exponential distributions with a mean difference of 1. Other mean
@@ -4001,7 +4001,7 @@ pb &lt;- txtProgressBar(max = nsim, style = 3)</code></pre>
     y &lt;- c(y1, y2)
     x &lt;- rep(c(&quot;A&quot;, &quot;B&quot;), times = c(m, n))
 
-    # t tests: First for unequal variances
+    # t-tests: First for unequal variances
     result[i, &quot;Welch&quot;] &lt;- t.test(y ~ x)$p.value &lt;= 0.05
     result[i, &quot;Student&quot;] &lt;- t.test(y ~ x, var.equal = TRUE)$p.value &lt;= 0.05
     
@@ -4025,7 +4025,7 @@ pb &lt;- txtProgressBar(max = nsim, style = 3)</code></pre>
 ##   0.729   0.581   0.602</code></pre>
 <p><strong>Comment</strong>: In this situation, all tests are somewhat
 anti-conservative regarding Type 1 error. At the cost of a slightly
-higher Type 1 error, Welch’s t test has clearly the highest power. The
+higher Type 1 error, Welch’s t-test has clearly the highest power. The
 permutation test performs somewhere in the middle.</p>
 </div>
 </div>
