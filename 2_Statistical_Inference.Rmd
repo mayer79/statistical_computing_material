@@ -727,7 +727,7 @@ A permutation test finds the null distribution of $T$ by repeatedly shuffling th
 1. To destroy the dependency between $\boldsymbol x$ and $\boldsymbol y$, randomly permute the values of $\boldsymbol x$ (or $\boldsymbol y$). The permuted values are denoted by $\boldsymbol x^*$.
 2. Calculate the value $t^* = T(\boldsymbol x^*, \boldsymbol y)$ of the test statistic.
 3. Repeat above two steps $B$ times to get $B$ permutation replications $t^*(1), \dots, t^*(B)$. They form the empirical null hypothesis distribution of $T$.
-4. Following the definition of a p value, calculate the bootstrap p value as $\frac{1}{B}\sum_{i = 1}^B 1\{t^*(i) \ge T(\boldsymbol x, \boldsymbol y)\}$.
+4. Following the definition of a p value, calculate the permutation p value as $\frac{1}{B}\sum_{i = 1}^B 1\{t^*(i) \ge T(\boldsymbol x, \boldsymbol y)\}$.
   
 **Remarks**
 
