@@ -11,7 +11,7 @@
 
 <meta name="author" content="Michael Mayer" />
 
-<meta name="date" content="2023-01-14" />
+<meta name="date" content="2023-03-18" />
 
 <title>3. Linear Models</title>
 
@@ -2909,7 +2909,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">3. Linear Models</h1>
 <h3 class="subtitle">Statistical Computing</h3>
 <h4 class="author">Michael Mayer</h4>
-<h4 class="date">2023-01-14</h4>
+<h4 class="date">2023-03-18</h4>
 
 </div>
 
@@ -3036,8 +3036,9 @@ regression with equation <span class="math display">
 </div>
 <div id="least-squares" class="section level2" number="2.2">
 <h2><span class="header-section-number">2.2</span> Least-squares</h2>
-<p>The optimal <span class="math inline">\hat f</span> to estimate <span class="math inline">f</span> is found by minimizing the sum (or mean) of
-squared <em>prediction errors</em> (<em>residuals</em>) <span class="math display">
+<p>The optimal <span class="math inline">\hat f</span> to estimate <span class="math inline">f</span> is found by minimizing as objective
+function the sum of squared <em>prediction errors</em>
+(<em>residuals</em>) <span class="math display">
   \sum_{i=1}^n e_i^2 = \sum_{i=1}^n (y_i - \hat y_i)^2.
 </span> Remember: <span class="math inline">y_i</span> is the observed
 response of the <span class="math inline">i</span>th data row and <span class="math inline">\hat y_i</span> its prediction (or <em>fitted
@@ -3167,7 +3168,10 @@ MSE_empty &lt;- mse(diamonds$price, predict(empty_model, diamonds))
 <p><strong>Comments</strong></p>
 <ul>
 <li><strong>RMSE:</strong> The RMSE is 1549 USD. This means that
-residuals (= prediction errors) are typically around 1549 USD.</li>
+residuals (= prediction errors) are typically around 1549 USD. More
+specifically, using the empirical rule (and assuming normality), about
+<span class="math inline">68\%</span> of the observed values are within
+<span class="math inline">\pm 1549</span> USD of the predictions.</li>
 <li><strong>R-squared:</strong> The R-squared shows that about 85% of
 the price variability can be explained by variability in carat.</li>
 </ul>
@@ -3291,12 +3295,12 @@ when the dummy variable switches from 0 to 1. This amounts to switching
 from the reference category (the one without dummy) to category <span class="math inline">k</span>.</li>
 <li><strong>Integer encoding:</strong> Ordinal categorical covariates
 are sometimes integer encoded for simplicity, i.e., each category is
-represented by an integer number. If a linear representation does not
-make sense, adding polynomial terms (see later) can lead to a good
+represented by an integer number. If such a linear representation does
+not make sense, adding polynomial terms (see later) can lead to a good
 compromise.</li>
 <li><strong>Small categories:</strong> To reduced overfitting, small
 categories are sometimes combined into an “Other” level or added to the
-largest category.</li>
+largest category (if this makes sense).</li>
 </ul>
 <div id="example-dummy-coding" class="section level3" number="2.5.1">
 <h3><span class="header-section-number">2.5.1</span> Example: Dummy
@@ -3343,14 +3347,15 @@ regression to 8067. The effect of <code>carat</code> <em>adjusted</em>
 for <code>color</code> is thus 8067.</li>
 <li><strong>Effects:</strong> Each dummy variable of <code>color</code>
 has received its own coefficient. Switching from the reference color “D”
-to “E” is associated with a price reduction of 94 USD. The effect of
-color “F” compared to color “D” is about <span class="math inline">-80</span> USD.</li>
+to “E” is associated with an average price reduction of 94 USD. The
+effect of color “F” compared to color “D” is about <span class="math inline">-80</span> USD.</li>
 <li><strong>Confounding:</strong> In contrast to the unintuitive
 descriptive results seen before (worse colors tend to higher prices),
 worse colors are now associated with lower prices. Adjusting for carat
 has solved that mystery. It appears that diamond size had
 <em>confounded</em> the association between color and price. A
-regression model accounts for such confounding effects.</li>
+regression model accounts for such confounding effects to a certain
+extent.</li>
 </ul>
 </div>
 </div>
@@ -3547,8 +3552,8 @@ Shouldn’t we better take the logarithm of <em>price</em>?</li>
 <li>As usual, we can say that a one-point increase in
 <code>log(carat)</code> leads to a expected price increase of 5836
 USD.</li>
-<li>Back-transformed, this amounts to saying that a <span class="math inline">1%</span> increase in <code>carat</code> is
-associated with a price increase of about <span class="math inline">5836/100 = 60</span> USD.</li>
+<li>Back-transformed, this amounts to saying that a <span class="math inline">1\%</span> increase in <code>carat</code> is
+associated with an average price increase of about <span class="math inline">5836/100 = 60</span> USD.</li>
 </ul>
 </div>
 </div>
@@ -4523,9 +4528,9 @@ sense? How many additional parameters are required? How does the RMSE
 react?</p></li>
 <li><p>In the regression in Exercise 1, represent “carat” by a
 restricted cubic spline with four knots. What is a restricted cubic
-spline? How much better does the RMSE get? Visualize the effect of
-“carat”. Hint: Restricted cubic splines are available in the R package
-“splines”.</p></li>
+spline (check on the internet)? How much better does the RMSE get?
+Visualize the effect of “carat”. Hint: Restricted cubic splines are
+available in the R package “splines”.</p></li>
 <li><p>Fit a Gamma regression with log-link to explain diamond prices by
 “log(carat)”, “color”, “cut”, and “clarity”. Compare the coefficients
 with those of a linear regression having the same covariates, but using

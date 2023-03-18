@@ -107,7 +107,7 @@ $$
 
 ## Least-squares
 
-The optimal $\hat f$ to estimate $f$ is found by minimizing the sum (or mean) of squared *prediction errors* (*residuals*)
+The optimal $\hat f$ to estimate $f$ is found by minimizing as objective function the sum of squared *prediction errors* (*residuals*)
 $$
   \sum_{i=1}^n e_i^2 = \sum_{i=1}^n (y_i - \hat y_i)^2.
 $$
@@ -192,7 +192,7 @@ MSE_empty <- mse(diamonds$price, predict(empty_model, diamonds))
 
 **Comments**
 
-- **RMSE:** The RMSE is 1549 USD. This means that residuals (= prediction errors) are typically around 1549 USD.
+- **RMSE:** The RMSE is 1549 USD. This means that residuals (= prediction errors) are typically around 1549 USD. More specifically, using the empirical rule (and assuming normality), about $68\%$ of the observed values are within $\pm 1549$ USD of the predictions.
 - **R-squared:** The R-squared shows that about 85% of the price variability can be explained by variability in carat.
 
 ### Model assumptions
@@ -252,8 +252,8 @@ For our diamonds data set, OHE for the variable `color` looks as follows (the fi
 **Comments on categorical covariates**
 
 - **Interpretation:** Interpreting the regression coefficient $\beta_k$ of the dummy variable $D_k$ is nothing special: It tells us how much $\mathbb E(Y)$ changes when the dummy variable switches from 0 to 1. This amounts to switching from the reference category (the one without dummy) to category $k$.
-- **Integer encoding:** Ordinal categorical covariates are sometimes integer encoded for simplicity, i.e., each category is represented by an integer number. If a linear representation does not make sense, adding polynomial terms (see later) can lead to a good compromise. 
-- **Small categories:** To reduced overfitting, small categories are sometimes combined into an "Other" level or added to the largest category.
+- **Integer encoding:** Ordinal categorical covariates are sometimes integer encoded for simplicity, i.e., each category is represented by an integer number. If such a linear representation does not make sense, adding polynomial terms (see later) can lead to a good compromise. 
+- **Small categories:** To reduced overfitting, small categories are sometimes combined into an "Other" level or added to the largest category (if this makes sense).
 
 ### Example: Dummy coding
 
@@ -272,8 +272,8 @@ summary(fit)
 **Comments**
 
 - **Slope:** Adding the covariate `color` has changed the slope of `carat` from 7756 in the simple linear regression to 8067. The effect of `carat` *adjusted* for `color` is thus 8067.
-- **Effects:** Each dummy variable of `color` has received its own coefficient. Switching from the reference color "D" to "E" is associated with a price reduction of 94 USD. The effect of color "F" compared to color "D" is about $-80$ USD.
-- **Confounding:** In contrast to the unintuitive descriptive results seen before (worse colors tend to higher prices), worse colors are now associated with lower prices. Adjusting for carat has solved that mystery. It appears that diamond size had *confounded* the association between color and price. A regression model accounts for such confounding effects.
+- **Effects:** Each dummy variable of `color` has received its own coefficient. Switching from the reference color "D" to "E" is associated with an average price reduction of 94 USD. The effect of color "F" compared to color "D" is about $-80$ USD.
+- **Confounding:** In contrast to the unintuitive descriptive results seen before (worse colors tend to higher prices), worse colors are now associated with lower prices. Adjusting for carat has solved that mystery. It appears that diamond size had *confounded* the association between color and price. A regression model accounts for such confounding effects to a certain extent.
 
 ## Flexibility
 
@@ -424,7 +424,7 @@ ggplot(to_plot, aes(x = carat, y = price)) +
 
 - Indeed, we have fitted a logarithmic relationship between carat and price. The scatterplots (on log-scale and back-transformed to original scale) reveal that this does not make much sense. The model looks wrong. Shouldn't we better take the logarithm of *price*?
 - As usual, we can say that a one-point increase in `log(carat)` leads to a expected price increase of 5836 USD.
-- Back-transformed, this amounts to saying that a $1%$ increase in `carat` is associated with a price increase of about $5836/100 = 60$ USD.
+- Back-transformed, this amounts to saying that a $1\%$ increase in `carat` is associated with an average price increase of about $5836/100 = 60$ USD.
 
 ### Logarithmic response
 
@@ -965,7 +965,7 @@ diamonds <- mutate_if(diamonds, is.ordered, factor, ordered = FALSE)
 
 2. Try to improve the model from Exercise 1 by adding interactions between our main predictor "carat" and "color", between "carat" and "cut", and also between "carat" and "clarity". Why could this make sense? How many additional parameters are required? How does the RMSE react?
 
-3. In the regression in Exercise 1, represent "carat" by a restricted cubic spline with four knots. What is a restricted cubic spline? How much better does the RMSE get? Visualize the effect of "carat". Hint: Restricted cubic splines are available in the R package "splines". 
+3. In the regression in Exercise 1, represent "carat" by a restricted cubic spline with four knots. What is a restricted cubic spline (check on the internet)? How much better does the RMSE get? Visualize the effect of "carat". Hint: Restricted cubic splines are available in the R package "splines". 
 
 4. Fit a Gamma regression with log-link to explain diamond prices by "log(carat)", "color", "cut", and "clarity". Compare the coefficients with those of a linear regression having the same covariates, but using "log(price)" as response. Calculate the relative bias of the average prediction. Why isn't it 0?
 
