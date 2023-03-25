@@ -644,7 +644,7 @@ The interpretation of model coefficients in GLMs is guided by the link function.
 $$
   \text{logit}(p) = \log(\text{odds}(p)) = \log\left(\frac{p}{1-p}\right).
 $$
-It maps probabilities to the real line. The inverse logit ("sigmoidal transformation" or "logistic function") reverts this: It maps real values to the range from 0 to 1. Odds, i.e., the ratio of $p$ to $1-p$, is a concept borrowed from gambling: The *probability* of getting a "6" is 1/6 whereas the *odds* of getting a "6" is $1:5 = 0.2$. By definition, logistic regression is an additive model for the log-odds, thus a multiplicative model for the odds of getting a 1. Accordingly, the coefficients $e^\beta - 1 \approx \beta$ are called *odds ratios*. There is no easy way to interpret the coefficients on the original probability scale.
+It maps probabilities to the real line. The inverse logit ("sigmoidal transformation" or "logistic function") reverts this: It maps real values to the range from 0 to 1. Odds, i.e., the ratio of $p$ to $1-p$, is a concept borrowed from gambling: The *probability* of getting a "6" is 1/6 whereas the *odds* of getting a "6" is $1:5 = 0.2$. By definition, logistic regression is an additive model for the log-odds, thus a multiplicative model for the odds of getting a 1. Accordingly, the coefficients $e^\beta$ are called *odds ratios*. There is no easy way to interpret the coefficients on the original probability scale.
 
 ![](figs/log_odds.png)
 
@@ -656,7 +656,7 @@ $$
 $$
 of the unit deviances over the model data $D$ (eventually weighted by case weights). For the normal linear model, the total deviance is equal to $n$ times the MSE. In fact, the total deviance plays the same role for GLMs as the MSE does for linear regression. Consequently, it is sometimes useful to consider as a relative performance measure the relative deviance improvement compared to an intercept-only model. For the normal linear regression model, this *Pseudo-R-squared* corresponds to the usual R-squared.
 
-**Outlook:** The loss functions used in the context of GLMs are used one-to-one as loss functions for other ML methods such as gradient boosting or neural networks. There, the "appropriate" loss function is chosen from the context. For example, if the response is binary, one usually chooses the binary cross-entropy as the objective function.
+**Outlook:** The loss functions used in the context of GLMs are used one-to-one as loss functions for other ML methods such as gradient boosting or neural networks. There, the "appropriate" loss function is chosen from the context. For example, if the response is binary, one usually chooses the binary cross-entropy as the loss function.
 
 ## Example: Poisson count regression
 
@@ -793,8 +793,9 @@ library(ggplot2)
 library(h2o)
 
 system.time( # 3 seconds
-  dim(df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet"))  
+  df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet")
 )
+dim(df)
 # 8'760'687      19
 
 setDT(df)
