@@ -11,7 +11,7 @@
 
 <meta name="author" content="Michael Mayer" />
 
-<meta name="date" content="2023-01-14" />
+<meta name="date" content="2023-04-02" />
 
 <title>4. Model Selection and Validation</title>
 
@@ -2909,7 +2909,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">4. Model Selection and Validation</h1>
 <h3 class="subtitle">Statistical Computing</h3>
 <h4 class="author">Michael Mayer</h4>
-<h4 class="date">2023-01-14</h4>
+<h4 class="date">2023-04-02</h4>
 
 </div>
 
@@ -3491,7 +3491,8 @@ h2o_split &lt;- h2o.splitFrame(
 
 system.time(  # 12 s
   fit &lt;- h2o.glm(
-    x, &quot;log_duration&quot;, 
+    x = x, 
+    y = &quot;log_duration&quot;, 
     training_frame = &quot;train&quot;, 
     validation_frame = &quot;valid&quot;, 
     lambda_search = TRUE, 
@@ -3505,7 +3506,8 @@ h2o_trainvalid &lt;- h2o.rbind(h2o_split[[1]], h2o_split[[2]])
 
 # Fit model with optimal lambda (0)
 fit_final &lt;- h2o.glm(
-  x, &quot;log_duration&quot;, 
+  x = x, 
+  y = &quot;log_duration&quot;, 
   training_frame = h2o_trainvalid, 
   validation_frame = &quot;test&quot;, 
   lambda = 0,
@@ -3513,14 +3515,14 @@ fit_final &lt;- h2o.glm(
 )
 
 fit_final  # Test R^2: 0.7814</code></pre>
-<p><strong>Comment:</strong> According to simple validation, adding an
-L2 penalty is not necessary. Thus, the final model is fitted without
-penalty on the pooled 90% training and validation data. Its test
-R-squared is very similar to the validation R-squared, indicating that
-there is no problematic overfit on the validation data. Why adding a
-penalty did not help to improve the model? Usually, ridge regression
-shines when the <span class="math inline">n/p</span> ratio is small. In
-our case, however, it is very large.</p>
+<p><strong>Comment:</strong> According to simple validation, no L2
+penalty is needed. Thus, the final model is fitted without penalty on
+the pooled 90% training and validation data. Its test R-squared is very
+similar to the validation R-squared, indicating that there is no
+problematic overfit on the validation data. Why adding a penalty did not
+help to improve the model? Usually, ridge regression shines when the
+<span class="math inline">n/p</span> ratio is small. In our case,
+however, it is very large.</p>
 </div>
 </div>
 <div id="random-splitting" class="section level1" number="7">
@@ -3859,7 +3861,7 @@ system.time(
     dbFetch() 
 )</code></pre>
 <pre><code>##        User      System verstrichen 
-##        3.49        0.32        3.94</code></pre>
+##        2.16        0.19        3.52</code></pre>
 <pre class="r"><code>head(df)</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
@@ -4040,7 +4042,7 @@ with or without interaction between <code>log(carat)</code> and
 <code>cut</code> regarding RMSE. Use a 80/20 data split. Make sure that
 the code is fully reproducible.</p></li>
 <li><p>Use 5-fold cross-validation to select the best polynomial degree
-to represent <code>log(carat)</code> in a Gamma GLM for diamonds prices
+to represent <code>log(carat)</code> in a Gamma GLM for diamond prices
 with log-link (with additional covariates <code>color</code>,
 <code>cut</code>, and <code>clarity</code>). Evaluate the result on 10%
 test data. Use the average Gamma deviance as performance measure

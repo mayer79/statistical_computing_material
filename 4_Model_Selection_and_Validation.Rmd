@@ -459,7 +459,8 @@ h2o_split <- h2o.splitFrame(
 
 system.time(  # 12 s
   fit <- h2o.glm(
-    x, "log_duration", 
+    x = x, 
+    y = "log_duration", 
     training_frame = "train", 
     validation_frame = "valid", 
     lambda_search = TRUE, 
@@ -473,7 +474,8 @@ h2o_trainvalid <- h2o.rbind(h2o_split[[1]], h2o_split[[2]])
 
 # Fit model with optimal lambda (0)
 fit_final <- h2o.glm(
-  x, "log_duration", 
+  x = x, 
+  y = "log_duration", 
   training_frame = h2o_trainvalid, 
   validation_frame = "test", 
   lambda = 0,
@@ -483,7 +485,7 @@ fit_final <- h2o.glm(
 fit_final  # Test R^2: 0.7814
 ```
 
-**Comment:** According to simple validation, adding an L2 penalty is not necessary. Thus, the final model is fitted without penalty on the pooled 90% training and validation data. Its test R-squared is very similar to the validation R-squared, indicating that there is no problematic overfit on the validation data. Why adding a penalty did not help to improve the model? Usually, ridge regression shines when the $n/p$ ratio is small. In our case, however, it is very large.
+**Comment:** According to simple validation, no L2 penalty is needed. Thus, the final model is fitted without penalty on the pooled 90% training and validation data. Its test R-squared is very similar to the validation R-squared, indicating that there is no problematic overfit on the validation data. Why adding a penalty did not help to improve the model? Usually, ridge regression shines when the $n/p$ ratio is small. In our case, however, it is very large.
 
 # Random Splitting?
 
@@ -898,7 +900,7 @@ spark_disconnect(sc)
 
 1. Use simple validation to determine whether a linear regression for `log(price)` with covariates `log(carat)`, `color`, `cut`, and `clarity` is better with or without interaction between `log(carat)` and `cut` regarding RMSE. Use a 80/20 data split. Make sure that the code is fully reproducible. 
 
-2. Use 5-fold cross-validation to select the best polynomial degree to represent `log(carat)` in a Gamma GLM for diamonds prices with log-link (with additional covariates `color`, `cut`, and `clarity`). Evaluate the result on 10% test data. Use the average Gamma deviance as performance measure (function `deviance_gamma()` in the package "MetricsWeighted"). Again make sure that the code is fully reproducible.
+2. Use 5-fold cross-validation to select the best polynomial degree to represent `log(carat)` in a Gamma GLM for diamond prices with log-link (with additional covariates `color`, `cut`, and `clarity`). Evaluate the result on 10% test data. Use the average Gamma deviance as performance measure (function `deviance_gamma()` in the package "MetricsWeighted"). Again make sure that the code is fully reproducible.
 
 3. How does repeated CV work? List one advantage and one disadvantage compared to standard cross-validation. When would you recommend grouped cross-validation and why? How does it work?
 
