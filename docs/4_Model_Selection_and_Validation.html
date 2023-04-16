@@ -11,7 +11,7 @@
 
 <meta name="author" content="Michael Mayer" />
 
-<meta name="date" content="2023-04-02" />
+<meta name="date" content="2023-04-16" />
 
 <title>4. Model Selection and Validation</title>
 
@@ -2909,7 +2909,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">4. Model Selection and Validation</h1>
 <h3 class="subtitle">Statistical Computing</h3>
 <h4 class="author">Michael Mayer</h4>
-<h4 class="date">2023-04-02</h4>
+<h4 class="date">2023-04-16</h4>
 
 </div>
 
@@ -3228,11 +3228,12 @@ for (i in 1:nrow(paramGrid)) {
   scores &lt;- numeric(nfolds)
   
   for (fold in 1:nfolds) {
-    X_train &lt;- X[fold_ix != fold, ]
-    y_train &lt;- diamonds[fold_ix != fold, y]
+    insample &lt;- fold_ix != fold
+    X_train &lt;- X[insample, ]
+    y_train &lt;- diamonds[insample, y]
     
-    X_valid &lt;- X[fold_ix == fold, ]
-    y_valid &lt;- diamonds[fold_ix == fold, y]
+    X_valid &lt;- X[!insample, ]
+    y_valid &lt;- diamonds[!insample, y]
 
     pred &lt;- knn.reg(X_train, test = X_valid, k = k, y = y_train)$pred
     scores[fold] &lt;- RMSE(y_valid, pred)
@@ -3372,11 +3373,12 @@ for (i in 1:nrow(paramGrid)) {
   scores &lt;- numeric(nfolds)
   
   for (fold in 1:nfolds) {
-    X_train_cv &lt;- X_train[fold_ix != fold, ]
-    y_train_cv &lt;- y_train[fold_ix != fold]
+    insample &lt;- fold_ix != fold
+    X_train_cv &lt;- X_train[insample, ]
+    y_train_cv &lt;- y_train[insample]
     
-    X_valid_cv &lt;- X_train[fold_ix == fold, ]
-    y_valid_cv &lt;- y_train[fold_ix == fold]
+    X_valid_cv &lt;- X_train[!insample, ]
+    y_valid_cv &lt;- y_train[!insample]
     
     pred &lt;- knn.reg(X_train_cv, test = X_valid_cv, k = k, y = y_train_cv)$pred
     scores[fold] &lt;- RMSE(y_valid_cv, pred)
@@ -3395,9 +3397,10 @@ head(paramGrid[order(paramGrid$RMSE), ], 2)</code></pre>
 rmse_reg &lt;- numeric(nfolds)
 
 for (fold in 1:nfolds) {
-  fit &lt;- lm(reformulate(x, y), data = train[fold_ix != fold, ])
-  pred &lt;- predict(fit, newdata = train[fold_ix == fold, ])
-  rmse_reg[fold] &lt;- RMSE(y_train[fold_ix == fold], pred)
+  insample &lt;- fold_ix != fold
+  fit &lt;- lm(reformulate(x, y), data = train[insample, ])
+  pred &lt;- predict(fit, newdata = train[!insample, ])
+  rmse_reg[fold] &lt;- RMSE(y_train[!insample], pred)
 }
 (rmse_reg &lt;- mean(rmse_reg))</code></pre>
 <pre><code>## [1] 0.1345552</code></pre>
@@ -3590,19 +3593,20 @@ waste of time, it is actually a good opportunity to learn</p>
 <p>For small data sets, the raw data is usually loaded into R/Python and
 then preprocessed in memory. For large data sets, this becomes slow or
 even impossible. One option is to externalize the preprocessing to a
-database management system (DBMS) with its out-of-core capabilities or
-to a big data technology like Spark. In this section, we take a short
-trip into that world.</p>
+database server with its out-of-core capabilities or to a big data
+technology like Spark. In this section, we take a short trip into that
+world.</p>
 <div id="sql" class="section level2" number="8.1">
 <h2><span class="header-section-number">8.1</span> SQL</h2>
 <p>Communication with the database is usually done with <em>SQL</em>
 (Structured Query Language). This is one of the most frequently used
 programming languages in data science. The SQL code is usually written
-directly in the DBMS or in R/Python. SQL is pronounced as “es-kiu-el” or
-“si-kwel”.</p>
-<p>We will introduce SQL with examples written in the in-process DBMS <a href="duckdb.org">DuckDB</a>. “In-process” means that when DuckDB is run
-from R/Python, it is embedded in the R/Python process itself. DuckDB is
-convenient for several reasons:</p>
+directly in a Database Management System (DBMS) or in R/Python. SQL is
+pronounced as “es-kiu-el” or “si-kwel”.</p>
+<p>We will introduce SQL with examples written in the in-process
+database <a href="duckdb.org">DuckDB</a>. “In-process” means that when
+DuckDB is run from R/Python, it is embedded in the R/Python process
+itself. DuckDB is convenient for several reasons:</p>
 <ul>
 <li>It is easy to install.</li>
 <li>It has no external dependencies.</li>
@@ -3625,6 +3629,8 @@ from date in spark sql”.</p>
 <p>To familiarize you with SQL, we will write some basic SQL queries (=
 questions) with DuckDB about the diamond data. (Also remember the
 “Translator” table of Chapter 1.)</p>
+<p><strong>Note that we use <code>head()</code> to keep the output slim.
+Usually, you would not need it.</strong></p>
 <pre class="r"><code>library(duckdb)
 library(tidyverse)
 
@@ -3636,7 +3642,7 @@ duckdb_register(con, name = &quot;dia&quot;, df = diamonds)
 con %&gt;% 
   dbSendQuery(&quot;SELECT * FROM dia&quot;) %&gt;% 
   dbFetch() %&gt;% 
-  head()</code></pre>
+  head()  # See note above</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["carat"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["cut"],"name":[2],"type":["fct"],"align":["left"]},{"label":["color"],"name":[3],"type":["fct"],"align":["left"]},{"label":["clarity"],"name":[4],"type":["fct"],"align":["left"]},{"label":["depth"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["table"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["price"],"name":[7],"type":["int"],"align":["right"]},{"label":["x"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["y"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["z"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["log_price"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["log_carat"],"name":[12],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.23","2":"Ideal","3":"E","4":"SI2","5":"61.5","6":"55","7":"326","8":"3.95","9":"3.98","10":"2.43","11":"5.786897","12":"-1.469676","_rn_":"1"},{"1":"0.21","2":"Premium","3":"E","4":"SI1","5":"59.8","6":"61","7":"326","8":"3.89","9":"3.84","10":"2.31","11":"5.786897","12":"-1.560648","_rn_":"2"},{"1":"0.23","2":"Good","3":"E","4":"VS1","5":"56.9","6":"65","7":"327","8":"4.05","9":"4.07","10":"2.31","11":"5.789960","12":"-1.469676","_rn_":"3"},{"1":"0.29","2":"Premium","3":"I","4":"VS2","5":"62.4","6":"58","7":"334","8":"4.20","9":"4.23","10":"2.63","11":"5.811141","12":"-1.237874","_rn_":"4"},{"1":"0.31","2":"Good","3":"J","4":"SI2","5":"63.3","6":"58","7":"335","8":"4.34","9":"4.35","10":"2.75","11":"5.814131","12":"-1.171183","_rn_":"5"},{"1":"0.24","2":"Very Good","3":"J","4":"VVS2","5":"62.8","6":"57","7":"336","8":"3.94","9":"3.96","10":"2.48","11":"5.817111","12":"-1.427116","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
@@ -3694,7 +3700,7 @@ con %&gt;%
 <pre class="r"><code># Grouped aggregate
 query &lt;- &quot;
   SELECT 
-    COLOR
+    color
     , COUNT(*) AS N
     , AVG(price) AS avg_price
     , SUM(price) / 1e6 AS sum_price_mio
@@ -3713,7 +3719,7 @@ con %&gt;%
 <pre class="r"><code># Join average price per color to original data as nested query
 # using color as join &quot;key&quot;
 query &lt;- &quot;
-  SELECT *
+  SELECT D.*, avg_price
   FROM dia D
   LEFT JOIN 
   (
@@ -3729,20 +3735,20 @@ con %&gt;%
   head()</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["carat"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["cut"],"name":[2],"type":["fct"],"align":["left"]},{"label":["color"],"name":[3],"type":["fct"],"align":["left"]},{"label":["clarity"],"name":[4],"type":["fct"],"align":["left"]},{"label":["depth"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["table"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["price"],"name":[7],"type":["int"],"align":["right"]},{"label":["x"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["y"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["z"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["log_price"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["log_carat"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["color"],"name":[13],"type":["fct"],"align":["left"]},{"label":["avg_price"],"name":[14],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.23","2":"Ideal","3":"E","4":"SI2","5":"61.5","6":"55","7":"326","8":"3.95","9":"3.98","10":"2.43","11":"5.786897","12":"-1.469676","13":"E","14":"3076.752","_rn_":"1"},{"1":"0.21","2":"Premium","3":"E","4":"SI1","5":"59.8","6":"61","7":"326","8":"3.89","9":"3.84","10":"2.31","11":"5.786897","12":"-1.560648","13":"E","14":"3076.752","_rn_":"2"},{"1":"0.23","2":"Good","3":"E","4":"VS1","5":"56.9","6":"65","7":"327","8":"4.05","9":"4.07","10":"2.31","11":"5.789960","12":"-1.469676","13":"E","14":"3076.752","_rn_":"3"},{"1":"0.29","2":"Premium","3":"I","4":"VS2","5":"62.4","6":"58","7":"334","8":"4.20","9":"4.23","10":"2.63","11":"5.811141","12":"-1.237874","13":"I","14":"5091.875","_rn_":"4"},{"1":"0.31","2":"Good","3":"J","4":"SI2","5":"63.3","6":"58","7":"335","8":"4.34","9":"4.35","10":"2.75","11":"5.814131","12":"-1.171183","13":"J","14":"5323.818","_rn_":"5"},{"1":"0.24","2":"Very Good","3":"J","4":"VVS2","5":"62.8","6":"57","7":"336","8":"3.94","9":"3.96","10":"2.48","11":"5.817111","12":"-1.427116","13":"J","14":"5323.818","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["carat"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["cut"],"name":[2],"type":["fct"],"align":["left"]},{"label":["color"],"name":[3],"type":["fct"],"align":["left"]},{"label":["clarity"],"name":[4],"type":["fct"],"align":["left"]},{"label":["depth"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["table"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["price"],"name":[7],"type":["int"],"align":["right"]},{"label":["x"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["y"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["z"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["log_price"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["log_carat"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["avg_price"],"name":[13],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.23","2":"Ideal","3":"E","4":"SI2","5":"61.5","6":"55","7":"326","8":"3.95","9":"3.98","10":"2.43","11":"5.786897","12":"-1.469676","13":"3076.752","_rn_":"1"},{"1":"0.21","2":"Premium","3":"E","4":"SI1","5":"59.8","6":"61","7":"326","8":"3.89","9":"3.84","10":"2.31","11":"5.786897","12":"-1.560648","13":"3076.752","_rn_":"2"},{"1":"0.23","2":"Good","3":"E","4":"VS1","5":"56.9","6":"65","7":"327","8":"4.05","9":"4.07","10":"2.31","11":"5.789960","12":"-1.469676","13":"3076.752","_rn_":"3"},{"1":"0.29","2":"Premium","3":"I","4":"VS2","5":"62.4","6":"58","7":"334","8":"4.20","9":"4.23","10":"2.63","11":"5.811141","12":"-1.237874","13":"5091.875","_rn_":"4"},{"1":"0.31","2":"Good","3":"J","4":"SI2","5":"63.3","6":"58","7":"335","8":"4.34","9":"4.35","10":"2.75","11":"5.814131","12":"-1.171183","13":"5323.818","_rn_":"5"},{"1":"0.24","2":"Very Good","3":"J","4":"VVS2","5":"62.8","6":"57","7":"336","8":"3.94","9":"3.96","10":"2.48","11":"5.817111","12":"-1.427116","13":"5323.818","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 <pre class="r"><code># Instead of nesting, we can use &quot;WITH&quot; to connect multiple queries
 query &lt;- &quot;
-  WITH grouped AS
+  WITH G AS
   (
     SELECT color, AVG(price) AS avg_price
     FROM dia
     GROUP BY color
   )
-  SELECT *
+  SELECT D.*, avg_price
   FROM dia D
-  LEFT JOIN GROUPED G
+  LEFT JOIN G
     ON D.color = G.color
 &quot;
 con %&gt;% 
@@ -3751,7 +3757,7 @@ con %&gt;%
   head()</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["carat"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["cut"],"name":[2],"type":["fct"],"align":["left"]},{"label":["color"],"name":[3],"type":["fct"],"align":["left"]},{"label":["clarity"],"name":[4],"type":["fct"],"align":["left"]},{"label":["depth"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["table"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["price"],"name":[7],"type":["int"],"align":["right"]},{"label":["x"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["y"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["z"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["log_price"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["log_carat"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["color"],"name":[13],"type":["fct"],"align":["left"]},{"label":["avg_price"],"name":[14],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.23","2":"Ideal","3":"E","4":"SI2","5":"61.5","6":"55","7":"326","8":"3.95","9":"3.98","10":"2.43","11":"5.786897","12":"-1.469676","13":"E","14":"3076.752","_rn_":"1"},{"1":"0.21","2":"Premium","3":"E","4":"SI1","5":"59.8","6":"61","7":"326","8":"3.89","9":"3.84","10":"2.31","11":"5.786897","12":"-1.560648","13":"E","14":"3076.752","_rn_":"2"},{"1":"0.23","2":"Good","3":"E","4":"VS1","5":"56.9","6":"65","7":"327","8":"4.05","9":"4.07","10":"2.31","11":"5.789960","12":"-1.469676","13":"E","14":"3076.752","_rn_":"3"},{"1":"0.29","2":"Premium","3":"I","4":"VS2","5":"62.4","6":"58","7":"334","8":"4.20","9":"4.23","10":"2.63","11":"5.811141","12":"-1.237874","13":"I","14":"5091.875","_rn_":"4"},{"1":"0.31","2":"Good","3":"J","4":"SI2","5":"63.3","6":"58","7":"335","8":"4.34","9":"4.35","10":"2.75","11":"5.814131","12":"-1.171183","13":"J","14":"5323.818","_rn_":"5"},{"1":"0.24","2":"Very Good","3":"J","4":"VVS2","5":"62.8","6":"57","7":"336","8":"3.94","9":"3.96","10":"2.48","11":"5.817111","12":"-1.427116","13":"J","14":"5323.818","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["carat"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["cut"],"name":[2],"type":["fct"],"align":["left"]},{"label":["color"],"name":[3],"type":["fct"],"align":["left"]},{"label":["clarity"],"name":[4],"type":["fct"],"align":["left"]},{"label":["depth"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["table"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["price"],"name":[7],"type":["int"],"align":["right"]},{"label":["x"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["y"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["z"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["log_price"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["log_carat"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["avg_price"],"name":[13],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.23","2":"Ideal","3":"E","4":"SI2","5":"61.5","6":"55","7":"326","8":"3.95","9":"3.98","10":"2.43","11":"5.786897","12":"-1.469676","13":"3076.752","_rn_":"1"},{"1":"0.21","2":"Premium","3":"E","4":"SI1","5":"59.8","6":"61","7":"326","8":"3.89","9":"3.84","10":"2.31","11":"5.786897","12":"-1.560648","13":"3076.752","_rn_":"2"},{"1":"0.23","2":"Good","3":"E","4":"VS1","5":"56.9","6":"65","7":"327","8":"4.05","9":"4.07","10":"2.31","11":"5.789960","12":"-1.469676","13":"3076.752","_rn_":"3"},{"1":"0.29","2":"Premium","3":"I","4":"VS2","5":"62.4","6":"58","7":"334","8":"4.20","9":"4.23","10":"2.63","11":"5.811141","12":"-1.237874","13":"5091.875","_rn_":"4"},{"1":"0.31","2":"Good","3":"J","4":"SI2","5":"63.3","6":"58","7":"335","8":"4.34","9":"4.35","10":"2.75","11":"5.814131","12":"-1.171183","13":"5323.818","_rn_":"5"},{"1":"0.24","2":"Very Good","3":"J","4":"VVS2","5":"62.8","6":"57","7":"336","8":"3.94","9":"3.96","10":"2.48","11":"5.817111","12":"-1.427116","13":"5323.818","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 <pre class="r"><code># Some SQL implementations also offer &quot;Window&quot; functions to do things like this
@@ -3861,7 +3867,7 @@ system.time(
     dbFetch() 
 )</code></pre>
 <pre><code>##        User      System verstrichen 
-##        2.16        0.19        3.52</code></pre>
+##        2.51        0.39        3.59</code></pre>
 <pre class="r"><code>head(df)</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
@@ -3899,7 +3905,7 @@ library(sparklyr)
 # Local Spark instance
 sc &lt;- spark_connect(master = &quot;local&quot;)
 
-# Register data on Spark
+# Loads data to Spark
 dia &lt;- copy_to(sc, diamonds)
 
 # SQL commands refer to Spark name &quot;diamonds&quot;

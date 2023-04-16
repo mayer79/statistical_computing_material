@@ -250,11 +250,12 @@ for (i in 1:nrow(paramGrid)) {
   scores <- numeric(nfolds)
   
   for (fold in 1:nfolds) {
-    X_train <- X[fold_ix != fold, ]
-    y_train <- diamonds[fold_ix != fold, y]
+    insample <- fold_ix != fold
+    X_train <- X[insample, ]
+    y_train <- diamonds[insample, y]
     
-    X_valid <- X[fold_ix == fold, ]
-    y_valid <- diamonds[fold_ix == fold, y]
+    X_valid <- X[!insample, ]
+    y_valid <- diamonds[!insample, y]
 
     pred <- knn.reg(X_train, test = X_valid, k = k, y = y_train)$pred
     scores[fold] <- RMSE(y_valid, pred)
@@ -359,11 +360,12 @@ for (i in 1:nrow(paramGrid)) {
   scores <- numeric(nfolds)
   
   for (fold in 1:nfolds) {
-    X_train_cv <- X_train[fold_ix != fold, ]
-    y_train_cv <- y_train[fold_ix != fold]
+    insample <- fold_ix != fold
+    X_train_cv <- X_train[insample, ]
+    y_train_cv <- y_train[insample]
     
-    X_valid_cv <- X_train[fold_ix == fold, ]
-    y_valid_cv <- y_train[fold_ix == fold]
+    X_valid_cv <- X_train[!insample, ]
+    y_valid_cv <- y_train[!insample]
     
     pred <- knn.reg(X_train_cv, test = X_valid_cv, k = k, y = y_train_cv)$pred
     scores[fold] <- RMSE(y_valid_cv, pred)
@@ -378,9 +380,10 @@ head(paramGrid[order(paramGrid$RMSE), ], 2)
 rmse_reg <- numeric(nfolds)
 
 for (fold in 1:nfolds) {
-  fit <- lm(reformulate(x, y), data = train[fold_ix != fold, ])
-  pred <- predict(fit, newdata = train[fold_ix == fold, ])
-  rmse_reg[fold] <- RMSE(y_train[fold_ix == fold], pred)
+  insample <- fold_ix != fold
+  fit <- lm(reformulate(x, y), data = train[insample, ])
+  pred <- predict(fit, newdata = train[!insample, ])
+  rmse_reg[fold] <- RMSE(y_train[!insample], pred)
 }
 (rmse_reg <- mean(rmse_reg))
 
@@ -522,13 +525,13 @@ Data tables are usually stored as files on a hard drive or as tables in a databa
 - what information the columns bear, and
 - what possible sources of bias might be present.
 
-For small data sets, the raw data is usually loaded into R/Python and then preprocessed in memory. For large data sets, this becomes slow or even impossible. One option is to externalize the preprocessing to a database management system (DBMS) with its out-of-core capabilities or to a big data technology like Spark. In this section, we take a short trip into that world.
+For small data sets, the raw data is usually loaded into R/Python and then preprocessed in memory. For large data sets, this becomes slow or even impossible. One option is to externalize the preprocessing to a database server with its out-of-core capabilities or to a big data technology like Spark. In this section, we take a short trip into that world.
 
 ## SQL
 
-Communication with the database is usually done with *SQL* (Structured Query Language). This is one of the most frequently used programming languages in data science. The SQL code is usually written directly in the DBMS or in R/Python. SQL is pronounced as "es-kiu-el" or "si-kwel".
+Communication with the database is usually done with *SQL* (Structured Query Language). This is one of the most frequently used programming languages in data science. The SQL code is usually written directly in a Database Management System (DBMS) or in R/Python. SQL is pronounced as "es-kiu-el" or "si-kwel".
 
-We will introduce SQL with examples written in the in-process DBMS [DuckDB](duckdb.org). "In-process" means that when DuckDB is run from R/Python, it is embedded in the R/Python process itself. DuckDB is convenient for several reasons:
+We will introduce SQL with examples written in the in-process database [DuckDB](duckdb.org). "In-process" means that when DuckDB is run from R/Python, it is embedded in the R/Python process itself. DuckDB is convenient for several reasons:
 
 - It is easy to install.
 - It has no external dependencies.
@@ -545,6 +548,8 @@ Remark: While there is an ISO norm for SQL, specific implementations (DuckDB, Sp
 
 To familiarize you with SQL, we will write some basic SQL queries (= questions) with DuckDB about the diamond data. (Also remember the "Translator" table of Chapter 1.)
 
+**Note that we use `head()` to keep the output slim. Usually, you would not need it.**
+
 ```{r}
 library(duckdb)
 library(tidyverse)
@@ -557,7 +562,7 @@ duckdb_register(con, name = "dia", df = diamonds)
 con %>% 
   dbSendQuery("SELECT * FROM dia") %>% 
   dbFetch() %>% 
-  head()
+  head()  # See note above
 
 # carat and log(price) sorted by carat in descending order
 query <- "
@@ -599,7 +604,7 @@ con %>%
 # Grouped aggregate
 query <- "
   SELECT 
-    COLOR
+    color
     , COUNT(*) AS N
     , AVG(price) AS avg_price
     , SUM(price) / 1e6 AS sum_price_mio
@@ -614,7 +619,7 @@ con %>%
 # Join average price per color to original data as nested query
 # using color as join "key"
 query <- "
-  SELECT *
+  SELECT D.*, avg_price
   FROM dia D
   LEFT JOIN 
   (
@@ -631,15 +636,15 @@ con %>%
 
 # Instead of nesting, we can use "WITH" to connect multiple queries
 query <- "
-  WITH grouped AS
+  WITH G AS
   (
     SELECT color, AVG(price) AS avg_price
     FROM dia
     GROUP BY color
   )
-  SELECT *
+  SELECT D.*, avg_price
   FROM dia D
-  LEFT JOIN GROUPED G
+  LEFT JOIN G
     ON D.color = G.color
 "
 con %>% 
@@ -762,7 +767,7 @@ library(sparklyr)
 # Local Spark instance
 sc <- spark_connect(master = "local")
 
-# Register data on Spark
+# Loads data to Spark
 dia <- copy_to(sc, diamonds)
 
 # SQL commands refer to Spark name "diamonds"
