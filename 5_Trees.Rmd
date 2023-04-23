@@ -196,6 +196,21 @@ ggplot(aes(`Bagging round`, `Validation RMSE`)) +
 - *Parallel computing:* Since the models can be fitted fully independently, bagging is ideal for parallel computing.
 - *Performance versus complexity*: A bagged model consisting of $B$ base models takes $B$ times as long to train, is $B$ times as large, and is usually more difficult to interpret than a single model. Still, the performance gain is sometimes worth the effort. The same tradeoff applies to ensembling techniques in general.
 
+### Bias-Variance Trade-Off
+
+We have mentioned that ensemble models try to reduce variance to improve their test performance. But what does *variance* mean in this context? And why does a smaller variance leads to better test performance? For the MSE as performance measure, we have the following decomposition of the generalization error:
+
+$$
+	\underbrace{\mathbb E(y_o - \hat f(x_o))^2}_{\text{Expected test MSE of } x_o} = \text{Var}(\hat f(x_o)) + \left[\text{Bias}(\hat f(x_o))\right]^2 + \underbrace{\text{Var}(\varepsilon)}_{\text{Irreducible error}},
+$$
+where
+
+- $(y_o, x_o)$ is a specific observation,
+- expectations and variances are calculated over a large number of training sets, and
+- "Bias" is the error introduced by approximating true model by $f$.
+
+Models with low bias (e.g. deep decision trees or $k$-nearest-neighbor with small $k$) usually have high variance. On the other hand, models with low variance (like linear regression) tend to have high bias. This is the famous *Bias-Variance Trade-Off*. A bagged decision tree tries to have low bias (deep trees) and low variance (from bagging).
+
 ## From bagging to random forests
 
 To turn a bagged decision tree into a random forest, a second source of randomness is injected: *Each split* scans only a random selection "mtry" of the $p$ covariates to find the best split, usually $\sqrt{p}$ or $p/3$. "mtry" is the main tuning parameter of a random forest. This extra randomness further decorrelates the bagged trees, which improves the diversification effect. Properties of bagging also apply to random forests.
@@ -216,7 +231,7 @@ For classification, the last step is again replaced by taking averages for each 
 - **Number of trees:** Usually, $100-1000$ trees are being grown. The more, the better. More trees also mean longer training time and larger models.
 - **Deep trees and diversification:** Single trees in a random forest are usually deep, thus they overfit on the training data. It is the diversity across trees that produces a good and stable model, just like a well-diversified stock portfolio. 
 - **Never trust performance on the training set for random forests.** The reason is the overfitting caused by the deep decision trees. Besides using the standard approaches to assess true performance (simple or cross-validation), we can study OOB results.
-- **Parameter tuning:** Random forests offer many tuning parameters. Since the results typically do not depend too much on their choice, untuned random forests are often great benchmark models, see also this [short video](https://www.youtube.com/watch?v=t8ooi_tJHSE) by Adele Cutler on working with Leo Breiman on random forests.
+- **Parameter tuning:** Random forests offer many tuning parameters. Since the results typically do not depend too much on their choice, untuned random forests are often great benchmark models, see also this [short video](https://www.youtube.com/watch?v=t8ooi_tJHSE) by Adele Cutler on working with Leo Breiman on random forests. (Remember: the main tuning parameter is "mtry").
 
 ### Example
 
@@ -275,7 +290,7 @@ In contrast to a single decision tree or a linear model, a combination of many t
 
 A pure prediction machine is hardly of any interest and might even contain mistakes like using covariates derived from the response. Model interpretation helps to fight such problems and thus also to increase trust in a model and its creator. The field of ML/statistics caring about interpreting complex models is called XAI (from e*X*plainable *A*rtificial *I*ntelligence). We present some of the methods here, and some other later in the chapter on neural networks.
 
-Most of the text of this section is adapted from our [responsible ML lecture]( https://github.com/lorentzenchr/responsible_ml_material).
+Most of the text of this section is adapted from the [responsible ML lecture]( https://github.com/lorentzenchr/responsible_ml_material).
 
 ### Variable importance
 
@@ -426,10 +441,10 @@ As base learners (or weak learners) $f^k$, often short decision trees are used. 
 
 Gradient boosting is gradient descent in function space. Gradient descent is a numerical method to find the (local) minimum of a smooth function $h: \mathbb R^n \to \mathbb R$. It works as follows:
 
-1. Start at some value $\hat x$.
+1. Start at some value $\hat x \in \mathbb R^n$.
 2. Repeat: $\hat x \leftarrow \hat x - \lambda g$.
 
-$\lambda$ is the step size or learning rate, and
+$\lambda > 0$ is the step size or learning rate, and
 $$
   g = \left[\frac{\partial h(x)}{\partial x}\right]_{x = \hat x}
 $$
@@ -451,7 +466,7 @@ $$
 $$
 i.e. of the $n$ predictions on the training data.
 
-We procede as in standard gradient descent:
+We proceed as in standard gradient descent:
 
 1. Start at some value $\hat f$.
 2. Repeat: $\hat f \leftarrow \hat f - \lambda g$ with
