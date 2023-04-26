@@ -117,10 +117,10 @@ Another way of creating an ensemble model is based on the Bootstrap: *Bagging* (
 **Algorithm: bagging** (for regression)
 
 1. Select $B$ bootstrapped training data sets from the original training data.
-2. Fit a model $\hat f^{*j}(\boldsymbol x)$ on each of them.
+2. Fit models $\hat f^{*j}(\boldsymbol x)$ on them.
 3. Return the bagged model 
   $$
-    \hat f(\boldsymbol x) = \frac{1}{B} \sum_{j = 1}^B f^{*j}(\boldsymbol x)
+    \hat f(\boldsymbol x) = \frac{1}{B} \sum_{j = 1}^B \hat f^{*j}(\boldsymbol x)
   $$
 
 For classification, the last step is replaced by taking averages for each predicted probability or doing majority voting.
@@ -198,7 +198,7 @@ ggplot(aes(`Bagging round`, `Validation RMSE`)) +
 
 ### Bias-Variance Trade-Off
 
-We have mentioned that ensemble models try to reduce variance to improve their test performance. But what does *variance* mean in this context? And why does a smaller variance leads to better test performance? For the MSE as performance measure, we have the following decomposition of the generalization error:
+We have mentioned that ensemble models try to reduce variance to improve their test performance. But what does *variance* mean in this context? And why does a smaller variance leads to better test performance? For the MSE as performance measure, we have the following decomposition of the generalization error (@james2021):
 
 $$
 	\underbrace{\mathbb E(y_o - \hat f(x_o))^2}_{\text{Expected test MSE of } x_o} = \text{Var}(\hat f(x_o)) + \left[\text{Bias}(\hat f(x_o))\right]^2 + \underbrace{\text{Var}(\varepsilon)}_{\text{Irreducible error}},
@@ -218,10 +218,10 @@ To turn a bagged decision tree into a random forest, a second source of randomne
 **Algorithm: random forest** (for regression)
 
 1. Select $B$ bootstrapped training data sets from the original training data.
-2. Fit a (usually deep) decision tree $\hat f^{*j}(\boldsymbol x)$ on each of them. During each split, consider only a random subset of features.
+2. Fit (usually deep) decision trees $\hat f^{*j}(\boldsymbol x)$ on these. During each split, consider only a random subset of features.
 3. Return the model 
   $$
-    \hat f(\boldsymbol x) = \frac{1}{B} \sum_{j = 1}^B f^{*j}(\boldsymbol x).
+    \hat f(\boldsymbol x) = \frac{1}{B} \sum_{j = 1}^B \hat f^{*j}(\boldsymbol x).
   $$
 
 For classification, the last step is again replaced by taking averages for each predicted probability or doing majority voting.
