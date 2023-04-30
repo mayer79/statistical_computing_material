@@ -491,7 +491,7 @@ Does this mean that the update steps in gradient boosting are $\hat f^k = -\lamb
 1. $y_i$ and thus $g_i$ are unknown at prediction stage.
 2. The model should be applicable not only to $\boldsymbol x \in \{\boldsymbol x_1, \dots, \boldsymbol x_n\}$. Rather we would like to apply it to any $\boldsymbol x$.
 
-The solution is to replace $-g_i$ by predictions of a decision tree (or of another base learner) with covariates $\boldsymbol X$. This leads us to the following algorithm:
+The solution is to replace $-g_i$ by predictions of a decision tree (or of another base learner) with covariates $\boldsymbol X$. This leads us to the following algorithms (slightly modified from @hastie01statisticallearning):
 
 **Algorithm: Gradient boosted trees for the squared error loss**
 
