@@ -313,7 +313,7 @@ There are three common ways to represent categorical input variables in a neural
 
 1. Binary and ordinal categoricals are best represented by integers and then treated as numeric.
 2. Unordered categoricals are either one-hot-encoded (i.e., each category is represented by a binary variable) or 
-3. they are represented by a (categorical) embedding. To do so, the $K$ categories are integer encoded and then condensed by a special *embedding layer* to $m << K$ dense features. This requires a more complex network architecture but saves memory and preprocessing. This approach is heavily used when the input consists of words (which is a categorical variable with thousands of levels - one level per word). The embedding is represented by a fully parametrized $(K \times m)$ matrix $\beta$ estimated together with the other network parameters. Instead of representing $X$ by $K$ dummy variables $\tilde X$ and then computing $\tilde X \beta$, the matrix multiplication is done implicitly by index slicing.
+3. they are represented by a (categorical) embedding. To do so, the $K$ categories are integer encoded and then condensed by a special *embedding layer* to $m << K$ dense features. This requires a more complex network architecture but saves memory and preprocessing. This approach is heavily used when the input consists of words (which is a categorical variable with thousands of levels - one level per word). The embedding is represented by a fully parametrized $(K \times m)$ matrix $\beta$ estimated together with the other network parameters. Instead of representing $X$ by $K$ dummy variables $\tilde X$ and then computing $\tilde X \beta$, the matrix multiplication is done implicitly by index slicing. For instance, if $X_1 = j$, then the first row of $X \beta$ equals the $j$-th row of $\beta$.
 
 For Option 2, input standardization is not required, for Option 3 it *must* not be applied as the embedding layer expects integers.
 
@@ -483,7 +483,7 @@ for (v in x) {
 
 # Excursion: Permutation Importance
 
-So far, we have measured variable importance by model-specific approaches such as split-gain importance for trees. A *model-agnostic* technique is called *permutation importance* introduced in [@breiman2001] for random forests and later generalized by @fisher2018 to other models. It measures by how much a relevant performance measure $S$ (e.g., the average deviance or the RMSE) of a fitted model $\hat f$, evaluated on a dataset $D$, worsens after randomly shuffling the values of the $j$-th feature. The larger the performance change, the more important the feature.
+So far, we have measured variable importance by model-specific approaches such as split-gain importance for trees. A *model-agnostic* technique is called *permutation importance* introduced in @breiman2001 for random forests and later generalized by @fisher2018 to other models. It measures by how much a relevant performance measure $S$ (e.g., the average deviance or the RMSE) of a fitted model $\hat f$, evaluated on a dataset $D$, worsens after randomly shuffling the values of the $j$-th feature. The larger the performance change, the more important the feature.
 
 Formally, permutation importance $\text{PVI}(j, D)$ of the $j$-th feature $X^{(j)}$ and data $D$ can be defined as follows:
 $$
@@ -520,7 +520,7 @@ The last example on neural networks aims to show
 - how flexible they are, and
 - how embedding layers are used to represent unordered categorical input.
 
-To do so, we create a model for (log) taxi trip durations, using the same features as before. We use the same train/test split as with the corresponding boosted trees model. Slight tuning (mainly the learning rate and the architecture) is done manually. The number of epochs is chosen by an early stopping callback. Pick-up location is modeled by a 10 dimensional embedding layer.
+To do so, we create a model for (log) taxi trip durations, using the same features as before. We use the same train/test split as with the corresponding boosted trees model. Slight tuning (mainly the learning rate and the architecture) is done manually. The number of epochs is chosen by an early stopping callback. Pick-up location is modeled by a ten-dimensional embedding layer.
 
 ```{r}
 library(arrow)
@@ -551,9 +551,8 @@ df[, `:=`(
 )]
 
 y <- "log_duration"
-x_emb <- "pu_loc"
 x_dense <- c("log_distance", "weekday", "pu_hour")
-x <- c(x_dense, x_emb)
+x <- c(x_dense, "pu_loc")
 
 # Random split
 with_seed(1, 
@@ -575,14 +574,16 @@ sc <- list(
   scale = attr(temp, "scaled:scale")
 )
 
-# Function that maps data.frame to scaled network input (a list with a dense 
-# part and each embedding as separat integer vector)
-prep_nn <- function(X, dense = x_dense, emb = x_emb, scaling = sc) {
+# Function that maps data.frame to network input 
+# (a list with a scaled matrix and an integer vector representing pu_loc)
+prep_nn <- function(X, dense = x_dense, scaling = sc) {
   X_dense <- data.matrix(X[, dense, drop = FALSE])
   X_dense <- scale(X_dense, center = scaling$center, scale = scaling$scale)
-  emb <- lapply(X[emb], function(x) as.integer(x) - 1)
-  c(list(dense1 = X_dense), emb)
+  list(dense1 = X_dense, pu_loc = as.integer(X$pu_loc) - 1)
 }
+
+# Does prep_nn() really work?
+prep_nn(head(test, 1))
 
 # Trying to make things reproducible...
 k_clear_session()
@@ -651,10 +652,7 @@ fl <- flashlight(
   y = y, 
   data = test, 
   label = "Neural net", 
-  metrics = list(
-    RMSE = rmse, 
-    `R squared` = r_squared
-  ),
+  metrics = list(RMSE = rmse, `R squared` = r_squared),
   predict_function = function(m, X)
     predict(m, prep_nn(X), batch_size = 50000, verbose = 0)
 )
