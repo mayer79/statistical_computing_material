@@ -174,9 +174,9 @@ pred_bagged <- t(apply(valid_pred, 1, function(z) cumsum(z) / 1:length(z)))
 rmse_bagged <- apply(pred_bagged, 2, function(z) RMSE(valid$log_price, z))
 
 # Visualization
-rmse_bagged %>% 
-  as_tibble_col("Validation RMSE") %>% 
-  mutate(`Bagging round` = row_number()) %>% 
+rmse_bagged |> 
+  as_tibble_col("Validation RMSE") |> 
+  mutate(`Bagging round` = row_number()) |> 
 ggplot(aes(`Bagging round`, `Validation RMSE`)) +
   geom_point(color = "chartreuse4") +
   geom_hline(yintercept = rmse_unbagged)
@@ -238,7 +238,7 @@ For classification, the last step is again replaced by taking averages for each 
 Let us now fit a random forest for (logarithmic) diamond prices with default parameters and 500 trees. 80% of the data is used for training, the other 20% we use for evaluating the performance. (Throughout the rest of the lecture, we will ignore the problematic aspect of having repeated rows for some diamonds.)
 
 ```{r}
-library(tidyverse)
+library(ggplot2)
 library(withr)
 library(ranger)
 library(MetricsWeighted)
@@ -246,7 +246,7 @@ library(MetricsWeighted)
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
 y <- "log_price"
-x <- c("log_carat", "color", "cut", "clarity")
+xvars <- c("log_carat", "color", "cut", "clarity")
 
 # Train/test split
 with_seed(
@@ -255,7 +255,7 @@ with_seed(
 )
 
 fit <- ranger(
-  reformulate(x, y), 
+  reformulate(xvars, y), 
   num.trees = 500,
   data = diamonds[ix, ], 
   importance = "impurity",
@@ -347,34 +347,27 @@ The corresponding ICE *curve* represents the graph $(v, \text{ICE}_j(v))$ for a 
 How do ICE and c-ICE plots for two selected features look?
 
 ```{r}
-library(flashlight)
-
-# Explainer object
-fl <- flashlight(
-  model = fit, 
-  data = diamonds[ix, ], 
-  label = "Random forest", 
-  predict_function = function(m, X) predict(m, X)$predictions
-)
+library(hstats)
 
 # ICE and c-ICE plots of log_carat and clarity
 v <- "log_carat"
-light_ice(fl, v = v, n_max = 200) %>% 
-  plot(alpha = 0.2, color = "chartreuse4") +
-  labs(title = paste("ICE plot for", v), y = "Prediction")
+ic <- ice(fit, v = v, X = diamonds[ix, ])
 
-light_ice(fl, v = v, n_max = 200, center = "middle") %>% 
-  plot(alpha = 0.1, color = "chartreuse4") +
-  labs(title = paste("c-ICE plot for", v), y = "Centered prediction")
+plot(ic, color = "chartreuse4") +
+  ggtitle(paste("ICE plot for", v))
+
+plot(ic, color = "chartreuse4", center = TRUE) |> 
+  ggtitle(paste("c-ICE plot for", v))
 
 v <- "clarity"
-light_ice(fl, v = v, n_max = 200) %>% 
-  plot(alpha = 0.2, color = "chartreuse4") +
-  labs(title = paste("ICE plot for", v), y = "Prediction")
+ic <- ice(fit, v = v, X = diamonds[ix, ])
 
-light_ice(fl, v = v, n_max = 200, center = "middle") %>% 
-  plot(alpha = 0.1, color = "chartreuse4") +
-  labs(title = paste("c-ICE plot for", v), y = "Centered prediction")
+plot(ic, color = "chartreuse4") +
+  ggtitle(paste("ICE plot for", v))
+
+plot(ic, color = "chartreuse4", center = TRUE) |> 
+  ggtitle(paste("c-ICE plot for", v))
+
 ```
 
 **Comments**
@@ -408,10 +401,10 @@ An alternative to the partial dependence plot, the *accumulated local effects* (
 Let us now study the partial dependence plots of all features.
 
 ```{r}
-for (v in x) {
-  p <- light_profile(fl, v = v, n_bins = 40) %>% 
+for (v in xvars) {
+  p <- partial_dep(fit, v = v, X = diamonds[ix, ]) |> 
     plot(color = "chartreuse4") +
-    labs(title = paste("PDP for", v), y = "Prediction") 
+    ggtitle(paste("PDP for", v))
   print(p)
 }
 ```
@@ -556,7 +549,7 @@ library(xgboost)
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
 y <- "log_price"
-x <- c("log_carat", "color", "cut", "clarity")
+xvars <- c("log_carat", "color", "cut", "clarity")
 
 # Split into train and valid
 with_seed(
@@ -565,10 +558,10 @@ with_seed(
 )
 
 y_train <- diamonds[ix, y]
-X_train <- diamonds[ix, x]
+X_train <- diamonds[ix, xvars]
 
 y_valid <- diamonds[-ix, y]
-X_valid <- diamonds[-ix, x]
+X_valid <- diamonds[-ix, xvars]
 
 # XGBoost data interface
 dtrain <- xgb.DMatrix(data.matrix(X_train), label = y_train)
@@ -629,14 +622,14 @@ We will use XGBoost to fit diamond prices using the squared error as loss functi
 ```{r}
 # This code is pretty long. It may serve as a general template to fit a
 # high-performance XGBoost model
-library(tidyverse)
+library(ggplot2)
 library(withr)
 library(xgboost)
 
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
 y <- "log_price"
-x <- c("log_carat", "color", "cut", "clarity")
+xvars <- c("log_carat", "color", "cut", "clarity")
 
 # Split into train and test
 with_seed(
@@ -645,10 +638,10 @@ with_seed(
 )
 
 y_train <- diamonds[ix, y]
-X_train <- diamonds[ix, x]
+X_train <- diamonds[ix, xvars]
 
 y_test <- diamonds[-ix, y]
-X_test <- diamonds[-ix, x]
+X_test <- diamonds[-ix, xvars]
 
 # XGBoost data interface
 dtrain <- xgb.DMatrix(data.matrix(X_train), label = y_train)
@@ -745,7 +738,7 @@ Now, the model is ready to be inspected by evaluating
 
 ```{r}
 library(MetricsWeighted)
-library(flashlight)
+library(hstats)
 
 # Performance on test data
 pred <- predict(fit, data.matrix(X_test))
@@ -757,17 +750,11 @@ imp <- xgb.importance(model = fit)
 xgb.plot.importance(imp, col = "chartreuse4")
 
 # Partial dependence plots
-fl <- flashlight(
-  model = fit, 
-  data = X_train, 
-  label = "XGB", 
-  predict_function = function(m, X) predict(m, data.matrix(X))
-)
-
-for (v in x) {
-  p <- light_profile(fl, v = v, n_bins = 40) %>% 
-    plot(color = "chartreuse4") +
-    labs(title = paste("PDP for", v), y = "Prediction") 
+pred_fun <- function(m, X) predict(m, data.matrix(X))
+for (v in xvars) {
+  p <- partial_dep(fit, v = v, X = X_train, pred_fun = pred_fun) |> 
+    plot("chartreuse4") +
+    ggtitle(paste("PDP for", v))
   print(p)
 }
 ```
@@ -782,12 +769,13 @@ Note: Since model tuning is slow, and the data is large, we could replace the 5-
 
 ```{r}
 library(arrow)
+library(ggplot2)
+library(dplyr)
 library(data.table)
 library(withr)
-library(tidyverse)
 library(lightgbm)
 library(MetricsWeighted)
-library(flashlight)
+library(hstats)
 
 df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet")
 
@@ -810,7 +798,7 @@ df[, `:=`(
   log_distance = log(trip_distance)
 )]
 
-x <- c("log_distance", "weekday", "pu_hour", "pu_loc")
+xvars <- c("log_distance", "weekday", "pu_hour", "pu_loc")
 y <- "log_duration"
 
 # Random split
@@ -819,10 +807,10 @@ with_seed(1,
 )
 
 y_train <- df[[y]][ix]
-X_train <- df[ix, x, with = FALSE]
+X_train <- df[ix, xvars, with = FALSE]
 
 y_test <- df[[y]][-ix]
-X_test <- df[-ix, x, with = FALSE]
+X_test <- df[-ix, xvars, with = FALSE]
 
 # Data interface of LGB
 dtrain <- lgb.Dataset(
@@ -906,7 +894,7 @@ if (tune) {
 # Fit model on best parameter combination
 #=======================================================================
 
-grid <- readRDS(grid_file) %>% 
+grid <- readRDS(grid_file) |> 
   arrange(score)
 head(grid)
 
@@ -935,17 +923,11 @@ r_squared(y_test, pred, reference_mean = mean(y_train))
 imp <- lgb.importance(model = fit_lgb)
 lgb.plot.importance(imp)
 
-fl <- flashlight(
-  model = fit_lgb, 
-  data = X_train, 
-  label = "LGB", 
-  predict_function = function(m, X) predict(m, data.matrix(X))
-)
-
-for (v in x) {
-  p <- light_profile(fl, v = v, n_bins = 40) %>% 
-    plot(color = "chartreuse4") +
-    labs(title = paste("PDP for", v), y = "Prediction") 
+# PDPs
+for (v in xvars) {
+  p <- partial_dep(fit_lgb, v = v, X = data.matrix(X_train)) |> 
+    plot("chartreuse4") +
+    ggtitle(paste("PDP for", v))
   print(p)
 }
 ```

@@ -67,13 +67,13 @@ library(FNN)
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
 y <- "log_price"
-x <- c("log_carat", "color", "cut", "clarity")
+xvars <- c("log_carat", "color", "cut", "clarity")
 
 # Scaled numeric feature matrix
-X <- scale(data.matrix(diamonds[, x]))
+X <- scale(data.matrix(diamonds[, xvars]))
 
 # The 10'000th observation
-diamonds[10000, c("price", "carat", x)]
+diamonds[10000, c("price", "carat", xvars)]
 
 # Its prediction
 knn.reg(X, test = X[10000, ], k = 5, y = diamonds[[y]])
@@ -112,7 +112,7 @@ library(withr)
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
 y <- "log_price"
-x <- c("log_carat", "color", "cut", "clarity")
+xvars <- c("log_carat", "color", "cut", "clarity")
 
 # Split diamonds into 80% for "training" and 20% for validation
 with_seed(
@@ -121,10 +121,10 @@ with_seed(
 )
 
 y_train <- diamonds[ix, y]
-X_train <- diamonds[ix, x]
+X_train <- diamonds[ix, xvars]
 
 y_valid <- diamonds[-ix, y]
-X_valid <- diamonds[-ix, x]
+X_valid <- diamonds[-ix, xvars]
 
 # Standardize training data
 X_train <- scale(data.matrix(X_train))
@@ -175,7 +175,7 @@ for (i in 1:nrow(paramGrid)) {
 head(paramGrid[order(paramGrid$valid), ], 2)
 
 # Plot results
-pivot_longer(paramGrid, cols = -k, values_to = "RMSE", names_to = "Data") %>% 
+pivot_longer(paramGrid, cols = -k, values_to = "RMSE", names_to = "Data") |> 
 ggplot(aes(x = k, y = RMSE, group = Data, color = Data)) +
   geom_point() +
   geom_line()
@@ -227,10 +227,10 @@ RMSE <- function(y, pred) {
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
 y <- "log_price"
-x <- c("log_carat", "color", "cut", "clarity")
+xvars <- c("log_carat", "color", "cut", "clarity")
 
 # Scaled feature matrix
-X <- scale(data.matrix(diamonds[x]))
+X <- scale(data.matrix(diamonds[xvars]))
 
 # Split diamonds into folds
 nfolds <- 5
@@ -321,7 +321,7 @@ RMSE <- function(y, pred) {
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
 y <- "log_price"
-x <- c("log_carat", "color", "cut", "clarity")
+xvars <- c("log_carat", "color", "cut", "clarity")
 
 # Split diamonds into 80% for training and 20% for testing
 with_seed(
@@ -336,11 +336,11 @@ y_train <- train[[y]]
 y_test <- test[[y]]
 
 # Standardize training data
-X_train <- scale(data.matrix(train[, x]))
+X_train <- scale(data.matrix(train[, xvars]))
 
 # Apply training scale to test data
 X_test <- scale(
-  data.matrix(test[, x]),
+  data.matrix(test[, xvars]),
   center = attr(X_train, "scaled:center"),
   scale = attr(X_train, "scaled:scale")
 )
@@ -381,7 +381,7 @@ rmse_reg <- numeric(nfolds)
 
 for (fold in 1:nfolds) {
   insample <- fold_ix != fold
-  fit <- lm(reformulate(x, y), data = train[insample, ])
+  fit <- lm(reformulate(xvars, y), data = train[insample, ])
   pred <- predict(fit, newdata = train[!insample, ])
   rmse_reg[fold] <- RMSE(y_train[!insample], pred)
 }
@@ -450,19 +450,19 @@ system.time({  # 5 seconds
   )]
 })
 
-x <- c("log_distance", "weekday", "pu_hour", "pu_loc")
+xvars <- c("log_distance", "weekday", "pu_hour", "pu_loc")
 y <- "log_duration"
 
 h2o.init(min_mem_size = "6G")
 
-h2o_df <- as.h2o(df[, c(x, y), with = FALSE])
+h2o_df <- as.h2o(df[, c(xvars, y), with = FALSE])
 h2o_split <- h2o.splitFrame(
   h2o_df, c(0.7, 0.2), destination_frames = c("train", "valid", "test")
 )
 
-system.time(  # 12 s
+system.time(  # 8 s
   fit <- h2o.glm(
-    x = x, 
+    x = xvars, 
     y = "log_duration", 
     training_frame = "train", 
     validation_frame = "valid", 
@@ -470,14 +470,14 @@ system.time(  # 12 s
     alpha = 0  # controls ratio of L1 to L2 penalty strength (0 means no L1)
   )
 )
-fit  # Validation R2: 0.782; best lambda essentially 0 (no penalty)
+fit  # Validation R2: 0.781; best lambda essentially 0 (no penalty)
 
 # Combine training + validation
 h2o_trainvalid <- h2o.rbind(h2o_split[[1]], h2o_split[[2]])
 
 # Fit model with optimal lambda (0)
 fit_final <- h2o.glm(
-  x = x, 
+  x = xvars, 
   y = "log_duration", 
   training_frame = h2o_trainvalid, 
   validation_frame = "test", 
@@ -485,7 +485,7 @@ fit_final <- h2o.glm(
   alpha = 0
 )
 
-fit_final  # Test R^2: 0.7814
+fit_final  # Test R^2: 0.7825
 ```
 
 **Comment:** According to simple validation, no L2 penalty is needed. Thus, the final model is fitted without penalty on the pooled 90% training and validation data. Its test R-squared is very similar to the validation R-squared, indicating that there is no problematic overfit on the validation data. Why adding a penalty did not help to improve the model? Usually, ridge regression shines when the $n/p$ ratio is small. In our case, however, it is very large.
@@ -551,17 +551,17 @@ To familiarize you with SQL, we will write some basic SQL queries (= questions) 
 **Note that we use `head()` to keep the output slim. Usually, you would not need it.**
 
 ```{r}
+library(ggplot2)
 library(duckdb)
-library(tidyverse)
 
 # Initialize virtual DB and register diamonds data
 con = dbConnect(duckdb())
 duckdb_register(con, name = "dia", df = diamonds)
 
 # Select every column (and every row)
-con %>% 
-  dbSendQuery("SELECT * FROM dia") %>% 
-  dbFetch() %>% 
+con |> 
+  dbSendQuery("SELECT * FROM dia") |> 
+  dbFetch() |> 
   head()  # See note above
 
 # carat and log(price) sorted by carat in descending order
@@ -571,9 +571,9 @@ query <- "
   FROM dia 
   ORDER BY carat DESC
 "
-con %>% 
-  dbSendQuery(query) %>% 
-  dbFetch() %>% 
+con |> 
+  dbSendQuery(query) |> 
+  dbFetch() |> 
   head()
 
 # Filter on carat > 2 and color = 'E'
@@ -584,9 +584,9 @@ query <- "
     carat > 2 
     AND color = 'E'
 "
-con %>% 
-  dbSendQuery(query) %>% 
-  dbFetch() %>% 
+con |> 
+  dbSendQuery(query) |> 
+  dbFetch() |> 
   head()
 
 # Aggregate
@@ -597,8 +597,8 @@ query <- "
     , SUM(price) / 1e6 AS sum_price_mio
   FROM dia
 "
-con %>% 
-  dbSendQuery(query) %>% 
+con |> 
+  dbSendQuery(query) |> 
   dbFetch()
 
 # Grouped aggregate
@@ -612,8 +612,8 @@ query <- "
   GROUP BY color 
   ORDER BY color
 "
-con %>% 
-  dbSendQuery(query) %>% 
+con |> 
+  dbSendQuery(query) |> 
   dbFetch()
 
 # Join average price per color to original data as nested query
@@ -629,9 +629,9 @@ query <- "
   ) G
   ON D.color = G.color
 "
-con %>% 
-  dbSendQuery(query) %>% 
-  dbFetch() %>% 
+con |> 
+  dbSendQuery(query) |> 
+  dbFetch() |> 
   head()
 
 # Instead of nesting, we can use "WITH" to connect multiple queries
@@ -647,9 +647,9 @@ query <- "
   LEFT JOIN G
     ON D.color = G.color
 "
-con %>% 
-  dbSendQuery(query) %>% 
-  dbFetch() %>% 
+con |> 
+  dbSendQuery(query) |> 
+  dbFetch() |> 
   head()
 
 # Some SQL implementations also offer "Window" functions to do things like this
@@ -657,9 +657,9 @@ query <- "
   SELECT *, AVG(price) OVER (PARTITION BY color) AS avg_price
   FROM dia
 "
-con %>% 
-  dbSendQuery(query) %>% 
-  dbFetch() %>% 
+con |> 
+  dbSendQuery(query) |> 
+  dbFetch() |> 
   head()
 
 dbDisconnect(con)
@@ -676,7 +676,6 @@ Here we will work directly with the taxi Parquet file. The goal is to answer the
 
 ```{r}
 library(duckdb)
-library(tidyverse)
 
 con = dbConnect(duckdb())
 
@@ -686,8 +685,8 @@ query <- "
   FROM 'taxi/yellow_tripdata_2018-01.parquet'
   LIMIT 5
 "
-con %>% 
-  dbSendQuery(query) %>% 
+con |> 
+  dbSendQuery(query) |> 
   dbFetch()
 
 # How many rows does the file have?
@@ -695,8 +694,8 @@ query <- "
   SELECT COUNT(*) AS N 
   FROM 'taxi/yellow_tripdata_2018-01.parquet'
 "
-con %>% 
-  dbSendQuery(query) %>% 
+con |> 
+  dbSendQuery(query) |> 
   dbFetch() 
 
 # Pickup location IDs with at least 100'000 rows
@@ -709,9 +708,9 @@ query <- "
   GROUP BY PULocationID
   HAVING N >= 100000
 "
-con %>% 
-  dbSendQuery(query) %>% 
-  dbFetch() %>% 
+con |> 
+  dbSendQuery(query) |> 
+  dbFetch() |> 
   head()
 
 # Prepare taxi model data directly from Parquet
@@ -738,8 +737,8 @@ query <- "
     AND DATE_DIFF('minutes', tpep_pickup_datetime, tpep_dropoff_datetime) BETWEEN 1 AND 120
 "
 system.time(
-  df <- con %>% 
-    dbSendQuery(query) %>% 
+  df <- con |> 
+    dbSendQuery(query) |> 
     dbFetch() 
 )
 
@@ -795,9 +794,9 @@ dbGetQuery(sc, query)
 # 7     J  2808   5323.818
 
 # dplyr style translated to Spark -> refer to R name "dia"
-dia %>% 
-  group_by(color) %>% 
-  summarise(N = count(), mean_price = mean(price)) %>% 
+dia |> 
+  group_by(color) |> 
+  summarise(N = count(), mean_price = mean(price)) |> 
   arrange(color)
 
 #   color     N mean_price
@@ -823,11 +822,11 @@ dbGetQuery(sc, query)
 # 2     D   402  3169.954
 
 # The same in dplyr style
-dia %>%
-  select(color, price) %>% 
-  group_by(color) %>% 
-  mutate(avg_price = mean(price)) %>% 
-  ungroup() %>% 
+dia |>
+  select(color, price) |> 
+  group_by(color) |> 
+  mutate(avg_price = mean(price)) |> 
+  ungroup() |> 
   head(2)
  
 #   color price avg_price
@@ -843,7 +842,7 @@ spark_disconnect(sc)
 As with DuckDB, working with one or multiple Parquet files is simple.
 
 ```{r, eval=FALSE}
-library(tidyverse)
+library(dplyr)
 library(DBI)
 library(sparklyr)
 
@@ -879,10 +878,10 @@ dbGetQuery(sc, query)
 # 10       10  100274
 
 # Same with dplyr syntax (translated to Spark)
-df %>% 
-  filter(trip_distance <= 10, trip_distance > 0) %>% 
-  group_by(distance = ceiling(trip_distance)) %>% 
-  count() %>%
+df |> 
+  filter(trip_distance <= 10, trip_distance > 0) |> 
+  group_by(distance = ceiling(trip_distance)) |> 
+  count() |>
   arrange(distance)
 
 #    distance       n
