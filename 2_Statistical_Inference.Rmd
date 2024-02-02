@@ -220,7 +220,7 @@ In our artificial situation, we can use simulation to generate many samples and 
 ```{r}
 # Note: we need the function ci() from above
 
-library(tidyverse)
+library(ggplot2)
 
 n <- 50
 nsims <- 1e4
@@ -228,10 +228,10 @@ mu <- 1
 
 set.seed(260)
 
-results <- replicate(nsims, ci(rexp(n, rate = 1 / mu))) %>% 
-  t() %>% 
-  data.frame() %>% 
-  mutate(ok = (lci <= mu) & (mu <= uci))
+results <- replicate(nsims, ci(rexp(n, rate = 1 / mu))) |> 
+  t() |> 
+  data.frame() |> 
+  transform(ok = (lci <= mu) & (mu <= uci))
 head(results)
 
 # Proportion correct
@@ -504,11 +504,11 @@ if (FALSE) {  # Trick to skip code block without commenting out
 # Some tidyverse magic for visualization
 library(tidyverse)
 
-coverage_probs %>% 
-  data.frame() %>% 
-  rownames_to_column("n") %>% 
-  mutate(n = as.integer(n)) %>% 
-  pivot_longer(cols = -n, names_to = "method") %>% 
+coverage_probs |> 
+  data.frame() |> 
+  rownames_to_column("n") |> 
+  mutate(n = as.integer(n)) |> 
+  pivot_longer(cols = -n, names_to = "method") |> 
 ggplot(aes(y = value, x = n, group = method, color = method)) +
   geom_point() +
   geom_line() +

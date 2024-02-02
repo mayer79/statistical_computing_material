@@ -209,32 +209,32 @@ Let's have some "dplyr" fun with diamonds.
 library(tidyverse)
 
 # Price and carat of the two most expensive diamonds
-diamonds %>%
-  arrange(-price) %>% 
-  select(price, carat) %>% 
+diamonds |>
+  arrange(-price) |> 
+  select(price, carat) |> 
   head(2)
 
 # Select diamonds >2 carat and calculate log(price) and log(carat)
 # Possible simplification: transmute() = mutate() + select()
-diamonds %>% 
-  filter(carat > 2) %>% 
+diamonds |> 
+  filter(carat > 2) |> 
   mutate(
     log_price = log(price), 
     log_carat = log(carat)
-  ) %>% 
-  select(log_price, log_carat) %>% 
+  ) |> 
+  select(log_price, log_carat) |> 
   head(2)
 
 # Median carat and price
-diamonds %>% 
+diamonds |> 
   summarize(
     med_carat = median(carat), 
     med_price = median(price)
   )
 
 # Same grouped by clarity
-med <- diamonds %>% 
-  group_by(clarity) %>% 
+med <- diamonds |> 
+  group_by(clarity) |> 
   summarize(
     med_carat = median(carat), 
     med_price = median(price)
@@ -243,30 +243,30 @@ med
 
 # Join medians to original data by using clarity as key
 # We only use price and the four "C" variables
-diamonds %>%
-  select(price, starts_with("c")) %>% 
-  left_join(med, by = "clarity") %>%
+diamonds |>
+  select(price, starts_with("c")) |> 
+  left_join(med, by = "clarity") |>
   head(2)
 
 # Directly with a grouped mutate (imagine this without pipe...)
-diamonds %>%
-  select(price, starts_with("c")) %>% 
-  group_by(clarity) %>% 
+diamonds |>
+  select(price, starts_with("c")) |> 
+  group_by(clarity) |> 
   mutate(
     med_carat = median(carat),
     med_price = median(price)
-  ) %>% 
-  ungroup() %>% 
+  ) |> 
+  ungroup() |> 
   head(2)
 
 # Turn all ordered factors into unordered
-dia <- diamonds %>% 
+dia <- diamonds |> 
   mutate_if(is.ordered, factor, ordered = FALSE)
 
 # Stack price and carat using the function pivot_longer() in "tidyr"
 # -> will need this later
-diamonds_long <- diamonds %>% 
-  select(price, carat) %>% 
+diamonds_long <- diamonds |> 
+  select(price, carat) |> 
   pivot_longer(everything())
 
 head(diamonds_long, 4)
@@ -363,9 +363,9 @@ p + facet_wrap(~ color)
 Combining faceting with data reshaping, we can draw histograms of multiple variables:
 
 ```{r}
-diamonds %>% 
-  select(price, carat) %>% 
-  pivot_longer(everything()) %>% 
+diamonds |> 
+  select(price, carat) |> 
+  pivot_longer(everything()) |> 
 ggplot(aes(value)) +
   geom_histogram(fill = "chartreuse4", bins = 29) +
   facet_wrap(~ name, scale = "free_x")
@@ -389,12 +389,12 @@ Another fantastic plotting library is [Plotly](https://plotly.com/). It provides
 The "plotly" package offers two ways to create the plots: We can either work with the native Plotly syntax or use the function `ggplotly()` to translate (most) "ggplot" objects. We will show the latter:
 
 ```{r}
-library(tidyverse)
+library(ggplot2)
 library(plotly)
 
 # Mind the outer parentheses
 (ggplot(diamonds, mapping = aes(color)) +
-  geom_bar(fill = "chartreuse4")) %>% 
+  geom_bar(fill = "chartreuse4")) |> 
   ggplotly()
 ```
 
@@ -681,8 +681,8 @@ library(tidyverse)
 error_bars <- function(xvar) {
   stopifnot(xvar %in% c("color", "clarity", "cut"))
 
-  dat <- diamonds %>% 
-    group_by(across(all_of(xvar))) %>% 
+  dat <- diamonds |> 
+    group_by(across(all_of(xvar))) |> 
     summarize(mean_price = mean(price), sd_price = sd(price))
 
   ggplot(dat, aes(x = .data[[xvar]], y = mean_price)) +
