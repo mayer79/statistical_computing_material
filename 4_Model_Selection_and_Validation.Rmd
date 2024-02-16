@@ -105,7 +105,7 @@ Furthermore, the performance difference $S(\hat f, D_\text{valid}) - S(\hat f, D
 We now use a 80%/20% split on the diamonds data to calculate the RMSE of 5-nearest-neighbor for both the training and the validation data.
 
 ```{r}
-library(ggplot2)
+library(tidyverse)
 library(FNN)
 library(withr)
 
@@ -153,8 +153,6 @@ cat("Validation RMSE:", RMSE(y_valid, pred_valid))
 Can we find a $k$ with better validation RMSE?
 
 ```{r}
-library(tidyr)
-
 # Tuning grid with different values for parameter k
 paramGrid <- data.frame(train = NA, valid = NA, k = 1:20)
     
