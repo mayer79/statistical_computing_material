@@ -11,7 +11,7 @@
 
 <meta name="author" content="Michael Mayer" />
 
-<meta name="date" content="2024-02-02" />
+<meta name="date" content="2024-02-16" />
 
 <title>4. Model Selection and Validation</title>
 
@@ -2903,7 +2903,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">4. Model Selection and Validation</h1>
 <h3 class="subtitle">Statistical Computing</h3>
 <h4 class="author">Michael Mayer</h4>
-<h4 class="date">2024-02-02</h4>
+<h4 class="date">2024-02-16</h4>
 
 </div>
 
@@ -3047,7 +3047,7 @@ small.</p>
 <h2><span class="header-section-number">3.1</span> Example</h2>
 <p>We now use a 80%/20% split on the diamonds data to calculate the RMSE
 of 5-nearest-neighbor for both the training and the validation data.</p>
-<pre class="r"><code>library(ggplot2)
+<pre class="r"><code>library(tidyverse)
 library(FNN)
 library(withr)
 
@@ -3095,9 +3095,7 @@ better than the (full-sample) performance of linear regression (residual
 standard error was 0.1338).</p>
 <p>Can we find a <span class="math inline">k</span> with better
 validation RMSE?</p>
-<pre class="r"><code>library(tidyr)
-
-# Tuning grid with different values for parameter k
+<pre class="r"><code># Tuning grid with different values for parameter k
 paramGrid &lt;- data.frame(train = NA, valid = NA, k = 1:20)
     
 # Calculate performance for each row in the parameter grid
@@ -3860,7 +3858,7 @@ system.time(
     dbFetch() 
 )</code></pre>
 <pre><code>##        User      System verstrichen 
-##        6.81        0.43        5.91</code></pre>
+##        5.25        0.62        5.82</code></pre>
 <pre class="r"><code>head(df)</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">

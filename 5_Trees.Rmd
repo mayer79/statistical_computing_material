@@ -266,8 +266,9 @@ fit
 # Performance on test data
 pred <- predict(fit, diamonds[-ix, ])$predictions
 y_test <- diamonds[-ix, y]
-rmse(y_test, pred)
-r_squared(y_test, pred)
+rmse(y_test, pred)  # 0.1020
+# Reference (intercept only) model "fitted" on training data
+r_squared(y_test, pred, reference_mean = mean(diamonds[ix, y]))  # 0.9900
 
 # Size of the fitted model
 format(object.size(fit), units = "auto")
@@ -367,7 +368,6 @@ plot(ic, color = "chartreuse4") +
 
 plot(ic, color = "chartreuse4", center = TRUE) |> 
   ggtitle(paste("c-ICE plot for", v))
-
 ```
 
 **Comments**
@@ -539,7 +539,7 @@ They differ from Friedman's original approach in multiple ways, e.g.:
 
 ### Example: XGBoost
 
-As an initial example on gradient boosting and XGBoost, we fit a model for diamond prices with squared error as loss function and RMSE as corresponding evaluation metric. The number of rounds/trees is chosen by early stopping on the validation data, i.e., until validation RMSE stops improving for a couple or rounds. The learning rate (weight of each tree) is chosen by trial and error in order to end up with a reasonable number of trees, see the next section for more details.
+As an initial example on gradient boosting and XGBoost, we fit a model for logarithmic diamond prices with squared error as loss function. The number of rounds/trees is initially chosen by cross-validation and early stopping, i.e., until CV validation (R)MSE stops improving for a couple or rounds. The learning rate (weight of each tree) is chosen by trial and error in order to end up with a reasonably small/large number of trees, see the next section for more details.
 
 ```{r}
 library(ggplot2)
@@ -560,34 +560,45 @@ with_seed(
 y_train <- diamonds[ix, y]
 X_train <- diamonds[ix, xvars]
 
-y_valid <- diamonds[-ix, y]
-X_valid <- diamonds[-ix, xvars]
+y_test <- diamonds[[y]][-ix]
+X_test <- diamonds[-ix, xvars]
 
 # XGBoost data interface
 dtrain <- xgb.DMatrix(data.matrix(X_train), label = y_train)
-dvalid <- xgb.DMatrix(data.matrix(X_valid), label = y_valid)
 
 # Minimal set of parameters
 params <- list(
-  learning_rate = 0.1,
   objective = "reg:squarederror",
-  eval_metric = "rmse"
+  learning_rate = 0.1
 )
   
-# Fit model until validation RMSE stops improving over the last 20 rounds
+# Add trees until CV validation MSE stops improving over the last 20 rounds
+cvm <- xgb.cv(
+  params = params,
+  data = dtrain,
+  nrounds = 5000,
+  nfold = 5,
+  early_stopping_rounds = 20, 
+  showsd = FALSE, 
+  print_every_n = 50
+)
+
+# Fit model on full training data using optimal number of boosting round
 fit <- xgb.train(
   params = params, 
   data = dtrain, 
-  watchlist = list(train = dtrain, valid = dvalid),
   print_every_n = 50,
-  nrounds = 5000, 
-  early_stopping_rounds = 20
+  nrounds = cvm$best_iteration
 )
+
+# Test performance
+rmse(y_test, predict(fit, data.matrix(X_test)))  # 0.09876
 ```
 
 **Comments:** 
 
-- More trees would mean better training performance but poorer validation performance.
+- More trees would mean better training performance but worse CV performance.
+- Test performance is better than the random forest. Can we do even better?
 - Compared to simple validation, cross-validation would provide an even better way to find the optimal number of boosting rounds/trees.
 
 ## Parameter tuning
@@ -625,6 +636,8 @@ We will use XGBoost to fit diamond prices using the squared error as loss functi
 library(ggplot2)
 library(withr)
 library(xgboost)
+library(MetricsWeighted)
+library(hstats)
 
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
@@ -652,9 +665,8 @@ tune <- FALSE
 if (tune) {
   # Use default parameters to set learning rate with suitable number of rounds
   params <- list(
-    learning_rate = 0.1,
     objective = "reg:squarederror",
-    eval_metric = "rmse"
+    learning_rate = 0.1
   )
   
   # Cross-validation
@@ -674,21 +686,19 @@ if (tune) {
     iteration = NA,
     cv_score = NA,
     train_score = NA,
-    learning_rate = 0.1,
     objective = "reg:squarederror",
-    eval_metric = "rmse",
-    max_depth = 6:7, 
-    min_child_weight = c(1, 10),
-    colsample_bytree = c(0.8, 1), 
-    subsample = c(0.8, 1), 
+    learning_rate = 0.1,
+    max_depth = 6:7,
     reg_lambda = c(0, 2.5, 5, 7.5),
     reg_alpha = c(0, 4),
-    # tree_method = "hist",   # when data is large
+    colsample_bynode = c(0.8, 1), 
+    subsample = c(0.8, 1), 
+    min_child_weight = c(1, 10),
     min_split_loss = c(0, 1e-04)
   )
 
  # Grid search or randomized search if grid is too large
-  max_size <- 20
+  max_size <- 32
   grid_size <- nrow(grid)
   if (grid_size > max_size) {
     grid <- grid[sample(grid_size, max_size), ]
@@ -737,13 +747,10 @@ Now, the model is ready to be inspected by evaluating
 - partial dependence plots.
 
 ```{r}
-library(MetricsWeighted)
-library(hstats)
-
 # Performance on test data
 pred <- predict(fit, data.matrix(X_test))
-rmse(y_test, pred)
-r_squared(y_test, pred, reference_mean = mean(y_train))
+rmse(y_test, pred)                                       # 0.0985
+r_squared(y_test, pred, reference_mean = mean(y_train))  # 0.9906
 
 # Variable importance regarding MSE improvement
 imp <- xgb.importance(model = fit)
@@ -849,17 +856,15 @@ if (tune) {
   grid <- expand.grid(
     iteration = NA,
     score = NA,
-    learning_rate = 1,
     objective = "mse",
-    metric = "rmse",
+    learning_rate = 1,
     num_leaves = c(15, 31, 63),
-    min_data_in_leaf = c(20, 50, 100),
-    min_sum_hessian_in_leaf = c(0, 0.001, 0.01),
+    lambda_l2 = c(0, 2.5, 5, 7.5),
+    lambda_l1 = c(0, 4),
     colsample_bynode = c(0.8, 1),
     bagging_fraction = c(0.8, 1),
-    lambda_l1 = c(0, 4),
-    lambda_l2 = c(0, 2.5, 5, 7.5),
-    num_threads = 7,
+    min_data_in_leaf = c(20, 50, 100),
+    min_sum_hessian_in_leaf = c(0, 0.001, 0.01),
     stringsAsFactors = FALSE
   )
   

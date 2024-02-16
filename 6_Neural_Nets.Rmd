@@ -100,19 +100,21 @@ output <- input |>
 nn <- keras_model(inputs = input, outputs = output)
 # summary(nn)
 
-nn |> compile(
-  optimizer = optimizer_adam(learning_rate = 1),
-  loss = "mse",
-  metrics = metric_root_mean_squared_error()
-)
+nn |> 
+  compile(
+    optimizer = optimizer_adam(learning_rate = 1),
+    loss = "mse",
+    metrics = metric_root_mean_squared_error()
+  )
 
 # Fit model - naive without validation
-history <- nn |> fit(
-  x = diamonds$carat,
-  y = diamonds$price,
-  epochs = 30,
-  batch_size = 100
-)
+history <- nn |> 
+  fit(
+    x = diamonds$carat,
+    y = diamonds$price,
+    epochs = 30,
+    batch_size = 100
+  )
 
 plot(history, metrics = "root_mean_squared_error")
 
@@ -186,19 +188,22 @@ output <- input |>
 nn <- keras_model(inputs = input, outputs = output)
 # summary(nn)
 
-nn |> compile(
-  optimizer = optimizer_adam(learning_rate = 1),
-  loss = "mse",
-  metrics = metric_root_mean_squared_error()
-)
+nn |> 
+  compile(
+    optimizer = optimizer_adam(learning_rate = 1),
+    loss = "mse",
+    metrics = metric_root_mean_squared_error()
+  )
 
 # Fit model - naive without validation
-nn |> fit(
-  x = diamonds$carat,
-  y = diamonds$price,
-  epochs = 30,
-  batch_size = 100
-)
+nn |> 
+  fit(
+    x = diamonds$carat,
+    y = diamonds$price,
+    epochs = 30,
+    batch_size = 100, 
+    verbose = 0
+  )
 
 # Plot effect of carat on average price
 data.frame(carat = seq(0.3, 3, by = 0.1)) |> 
@@ -250,19 +255,22 @@ output <- input |>
 # Create and compile model
 nn <- keras_model(inputs = input, outputs = output)
 
-nn |> compile(
-  optimizer = optimizer_adam(learning_rate = 0.2),
-  loss = "mse",
-  metrics = metric_root_mean_squared_error()
-)
+nn |> 
+  compile(
+    optimizer = optimizer_adam(learning_rate = 0.2),
+    loss = "mse",
+    metrics = metric_root_mean_squared_error()
+  )
 
 # Fit model - naive without validation
-nn |> fit(
-  x = diamonds$carat,
-  y = diamonds$price,
-  epochs = 50,
-  batch_size = 100
-)
+nn |> 
+  fit(
+    x = diamonds$carat,
+    y = diamonds$price,
+    epochs = 50,
+    batch_size = 100, 
+    verbose = 0
+  )
 
 # Plot effect of carat on average price
 data.frame(carat = seq(0.3, 3, by = 0.1)) |> 
@@ -371,6 +379,8 @@ We will now fit a neural net with two hidden layers (30 and 15 nodes) and a tota
 library(ggplot2)
 library(withr)
 library(keras)
+library(MetricsWeighted)
+library(hstats)
 
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
@@ -422,11 +432,12 @@ output <- input |>
 nn <- keras_model(inputs = input, outputs = output)
 summary(nn)
 
-nn |> compile(
-  optimizer = optimizer_adam(learning_rate = 0.05),
-  loss = "mse",
-  metrics = metric_root_mean_squared_error()
-)
+nn |> 
+  compile(
+    optimizer = optimizer_adam(learning_rate = 0.05),
+    loss = "mse",
+    metrics = metric_root_mean_squared_error()
+  )
 
 # Callbacks
 cb <- list(
@@ -435,28 +446,27 @@ cb <- list(
 )
        
 # Fit model
-history <- nn |> fit(
-  x = prep_nn(X_train),
-  y = y_train,
-  epochs = 100,
-  batch_size = 400, 
-  validation_split = 0.2,
-  callbacks = cb
-)
+history <- nn |> 
+  fit(
+    x = prep_nn(X_train),
+    y = y_train,
+    epochs = 100,
+    batch_size = 400, 
+    validation_split = 0.2,
+    callbacks = cb,
+    verbose = 0
+  )
 
 plot(history, metrics = "root_mean_squared_error", smooth = FALSE) +
   coord_cartesian(xlim = c(2, length(history$metrics$loss)), ylim = c(0.1, 0.2))
 
 # Interpret
-library(hstats)
-library(MetricsWeighted)
-
 pred_fun <- function(m, X) predict(m, prep_nn(X), batch_size = 1000, verbose = 0)
 
 # Performance on validation data
 pred <- pred_fun(nn, X_test)
 rmse(y_test, pred)
-r_squared(y_test, pred)
+r_squared(y_test, pred, reference_mean = mean(y_train))
 
 # Variable importance?
 
@@ -518,6 +528,8 @@ library(data.table)
 library(withr)
 library(ggplot2)
 library(keras)
+library(MetricsWeighted)
+library(hstats)
 
 df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet")
 
@@ -602,10 +614,8 @@ inputs <- list(dense1 = input_dense, pu_loc = input_pu_loc)
 nn <- keras_model(inputs = inputs, outputs = outputs)
 summary(nn)
 
-nn |> compile(
-  optimizer = optimizer_adam(learning_rate = 0.005),
-  loss = "mse"
-)
+nn |> 
+  compile(optimizer = optimizer_adam(learning_rate = 0.005), loss = "mse")
 
 # Callbacks
 cb <- list(
@@ -615,14 +625,16 @@ cb <- list(
 
 # Fit model
 if (FALSE) {  # Set to true to refit
-  history <- nn |> fit(
-    x = prep_nn(X_train),
-    y = y_train,
-    epochs = 100,
-    batch_size = 50000, 
-    validation_split = 0.2,
-    callbacks = cb
-  )
+  history <- nn |> 
+    fit(
+      x = prep_nn(X_train),
+      y = y_train,
+      epochs = 100,
+      batch_size = 50000, 
+      validation_split = 0.2,
+      callbacks = cb,
+      verbose = 0
+    )
   plot(history, metrics = c("loss", "val_loss"), smooth = FALSE) +
     coord_cartesian(ylim = c(0, 0.15))
   save_model_weights_hdf5(nn, "taxi/taxi_nn.h5")
@@ -634,15 +646,12 @@ if (FALSE) {  # Set to true to refit
 # Inspect
 #=======================================================================
 
-library(hstats)
-library(MetricsWeighted)
-
 pred_fun <- function(m, X) predict(m, prep_nn(X), batch_size = 50000, verbose = 0)
 
 # Performance on test data
 pred <- pred_fun(nn, X_test)
 rmse(y_test, pred)
-r_squared(y_test, pred)
+r_squared(y_test, pred, reference_mean = mean(y_train))
 
 # Permutation importance
 perm_importance(nn, X = X_test, y = y_test, pred_fun = pred_fun, verbose = FALSE) |> 
