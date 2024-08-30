@@ -780,7 +780,7 @@ This construction is often used in R.
     
 2. Create an R Markdown file that contains all answers to Exercise 1. Knit the report to HTML. Make sure that the resulting HTML looks neat and clean, so that you could hand it over to someone else.
 
-3. The sieve of Eratosthenes is an ancient algorithm to get all prime numbers up to any given limit $n$, see [Wikipedia](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes). Write a function `sieve_of_eratosthenes(n)` that returns all prime numbers up to $n$. Benchmark the results for $n = 10^5$  with the package "microbenchmark". Mind your coding style!
+3. The sieve of Eratosthenes is an ancient algorithm to get all prime numbers up to any given limit $n$, see [Wikipedia](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes). Write a function `sieve_of_eratosthenes(n)` that returns all prime numbers up to $n$. Benchmark the results for $n = 10^5$  with the package "bench". Mind your coding style!
 
 4. In Exercise 1c, we have calculated and plotted the average number of claims per level of "agecat" in the `dataCar` data.
     a. Write a function `avg_claim_counts(v)` that provides such a visualization for any discrete variable `v`.

@@ -46,7 +46,7 @@ In the first two chapters, we will need these contributed R packages:
 - tidyverse
 - plotly
 - insuranceData
-- microbenchmark
+- bench
 - withr
 - boot
 - coin
