@@ -33,13 +33,13 @@ in your Git console, or by downloading everything as Zip file.
 
 ### Large data
 
-Download the large dataset "January 2022 - Yellow Taxi Trip Records" from [this page](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page) or use the direct download [link](https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-01.parquet).
+Download the large dataset "January 2018 - Yellow Taxi Trip Records" from [this page](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page).
 
 Place it in the project subfolder "taxi/".
 
 ### Software
 
-We will work with R version >= 4.1 and RStudio. 
+We will work with R version >= 4.4 and RStudio. 
 
 In the first two chapters, we will need these contributed R packages:
 
@@ -53,19 +53,19 @@ In the first two chapters, we will need these contributed R packages:
 
 For the remaining chapters, we further need:
 
-- h2o (large package)
+- h2o (requires Java)
 - arrow
 - data.table
 - FNN
 - duckdb
-- sparklyr (large package)
+- sparklyr (requires Java)
 - rpart.plot
 - ranger
 - xgboost
 - lightgbm
 - hstats
 - MetricsWeighted
-- keras (large, see below)
+- keras (requires Python, see below)
 
 For the last chapter, we additionally need Python with TensorFlow >= 2.15. You can install it by running the R command `keras::install_keras(version = "release-cpu")`. If the following code works, you are all set. (Some red start-up messages/warnings are okay.)
 

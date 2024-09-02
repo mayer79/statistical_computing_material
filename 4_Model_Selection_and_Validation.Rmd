@@ -426,7 +426,7 @@ library(data.table)
 library(ggplot2)
 library(h2o)
 
-system.time( # 3 seconds
+system.time( # 2 seconds
   dim(df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet"))  
 )
 
@@ -458,7 +458,7 @@ h2o_split <- h2o.splitFrame(
   h2o_df, c(0.7, 0.2), destination_frames = c("train", "valid", "test")
 )
 
-system.time(  # 8 s
+system.time(  # 6 s
   fit <- h2o.glm(
     x = xvars, 
     y = "log_duration", 
@@ -468,7 +468,7 @@ system.time(  # 8 s
     alpha = 0  # controls ratio of L1 to L2 penalty strength (0 means no L1)
   )
 )
-fit  # Validation R2: 0.781; best lambda essentially 0 (no penalty)
+fit  # Validation R2: 0.782; best lambda essentially 0 (no penalty)
 
 # Combine training + validation
 h2o_trainvalid <- h2o.rbind(h2o_split[[1]], h2o_split[[2]])
@@ -483,7 +483,7 @@ fit_final <- h2o.glm(
   alpha = 0
 )
 
-fit_final  # Test R^2: 0.7825
+fit_final  # Test R^2: 0.782
 ```
 
 **Comment:** According to simple validation, no L2 penalty is needed. Thus, the final model is fitted without penalty on the pooled 90% training and validation data. Its test R-squared is very similar to the validation R-squared, indicating that there is no problematic overfit on the validation data. Why adding a penalty did not help to improve the model? Usually, ridge regression shines when the $n/p$ ratio is small. In our case, however, it is very large.
@@ -726,7 +726,7 @@ query <- "
     , LOG(DATE_DIFF('minutes', tpep_pickup_datetime, tpep_dropoff_datetime)) AS log_duration
     , DAYNAME(tpep_pickup_datetime) AS weekday
     , EXTRACT(hour FROM tpep_pickup_datetime) as pu_hour
-    , COALESCE(L.pu_loc, 'Other') AS pu_loc
+    , COALESCE(CAST(L.pu_loc AS varchar), 'Other') AS pu_loc
   FROM 'taxi/yellow_tripdata_2018-01.parquet' A
   LEFT JOIN LOC L
   ON A.PULocationID = L.pu_loc
@@ -759,9 +759,11 @@ Let's start a local Spark instance and apply some small queries to the diamond d
 library(tidyverse)
 library(DBI)
 library(sparklyr)
-# spark_install("3.2")
+# spark_install("3.4")
 
 # Local Spark instance
+#  Maybe: Solve issue with Temp Dir on Windows
+#  https://windowsreport.com/windows-temp-folder-access-denied/
 sc <- spark_connect(master = "local")
 
 # Loads data to Spark
