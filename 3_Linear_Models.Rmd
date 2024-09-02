@@ -836,7 +836,7 @@ ggplot(df[sample(df[, .N], 1e4)], aes(log_duration, log_distance)) +
 x <- c("log_distance", "weekday", "pu_hour", "pu_loc")
 y <- "log_duration"
 
-# Fit model with 68 parameters via lm(): 66 seconds
+# Fit model with 68 parameters via lm(): 40 seconds
 system.time(
   fit <- lm(reformulate(x, y), data = df)
 )
