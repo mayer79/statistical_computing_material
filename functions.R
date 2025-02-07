@@ -11,7 +11,7 @@ gcd <- function(a, b) {
     length(b) == 1,
     a >= 1,
     b >= 1,
-    a == trunc(a),
+    a == trunc(a),  # check if integer
     b == trunc(b),
     max(a, b) < 2^50
   )

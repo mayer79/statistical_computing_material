@@ -102,7 +102,7 @@ Here, we list a couple of properties of decision trees.
 
 These properties (except the last one) translate to combinations of trees like random forests or boosted trees.
 
-Before we delve into these tree ensemble techniques, here is a [short video](https://www.youtube.com/watch?v=8hupHmBVvb0) of Jerome Friedman explaining how he tried to efficiently approximate nearest neighbor and came up with a new method: decision trees.
+Before we look into these tree ensemble techniques, here is a [short video](https://www.youtube.com/watch?v=8hupHmBVvb0) of Jerome Friedman explaining how he tried to efficiently approximate nearest neighbor and came up with a new method: decision trees.
 
 # Random Forests
 
@@ -164,10 +164,10 @@ for (j in 1:B) {
   valid_pred[, j] <- predict(fit_boot, valid)
 }
 
-# Very high correlations across models (subset of three models shown)
+# Very high correlations across model predictions (subset of three models shown)
 round(cor(valid_pred[, 1:3]), 3)
 
-# Rowwise successive mean predictions
+# Row-wise successive mean predictions
 pred_bagged <- t(apply(valid_pred, 1, function(z) cumsum(z) / 1:length(z)))
 
 # Validation RMSE per column
@@ -191,7 +191,7 @@ ggplot(aes(`Bagging round`, `Validation RMSE`)) +
 
 **Remarks on bagging**
 
-- *Base learners*: Bagging works best with unstable models like deep decision trees as base learners. In principle, it can also be applied to any other modeling technique, e.g, linear regression. 
+- *Base learners*: Bagging works best with unstable models like deep decision trees as base learners. In principle, it can also be applied to any other modeling technique, e.g., linear regression. 
 - *OOB validation*: In each tree, about 1/3 of the observations are not included in the bootstrap sample. Put differently: each observation is used in about 2/3 of all models. If its prediction is calculated from the other 1/3 of the models, we get an "out-of-sample" prediction, also called "out-of-bag" (OOB) prediction. If rows are independent, the performance measure derived from these OOB predictions is usually a good estimate of true performance, replacing (cross-)validation. Do not trust OOB results when rows are dependent, such as with grouped rows.
 - *Parallel computing:* Since the models can be fitted fully independently, bagging is ideal for parallel computing.
 - *Performance versus complexity*: A bagged model consisting of $B$ base models takes $B$ times as long to train, is $B$ times as large, and is usually more difficult to interpret than a single model. Still, the performance gain is sometimes worth the effort. The same tradeoff applies to ensembling techniques in general.
@@ -207,13 +207,13 @@ where
 
 - $(y_o, x_o)$ is a specific observation,
 - expectations and variances are calculated over a large number of training sets, and
-- "Bias" is the error introduced by approximating true model by $f$.
+- "Bias" is the error introduced by approximating the true model by $f$.
 
-Models with low bias (e.g. deep decision trees or $k$-nearest-neighbor with small $k$) usually have high variance. On the other hand, models with low variance (like linear regression) tend to have high bias. This is the famous *Bias-Variance Trade-Off*. A bagged decision tree tries to have low bias (deep trees) and low variance (from bagging).
+Models with low bias (e.g., deep decision trees or $k$-nearest-neighbor with small $k$) usually have high variance. On the other hand, models with low variance (like linear regression) tend to have high bias. This is the famous *Bias-Variance Trade-Off*. A bagged decision tree tries to have low bias (deep trees) and low variance (from bagging).
 
 ## From bagging to random forests
 
-To turn a bagged decision tree into a random forest, a second source of randomness is injected: *Each split* scans only a random selection "mtry" of the $p$ covariates to find the best split, usually $\sqrt{p}$ or $p/3$. "mtry" is the main tuning parameter of a random forest. This extra randomness further decorrelates the bagged trees, which improves the diversification effect. Properties of bagging also apply to random forests.
+To turn a bagged decision tree into a random forest, a second source of randomness is injected: *Each split* scans only a random selection "mtry" of the $p$ covariates to find the best split, usually $\sqrt{p}$ or $p/3$. "mtry" is one of the main tuning parameters of a random forest. This extra randomness further decorrelates the bagged trees, which improves the diversification effect. Properties of bagging also apply to random forests.
 
 **Algorithm: random forest** (for regression)
 
@@ -231,7 +231,7 @@ For classification, the last step is again replaced by taking averages for each 
 - **Number of trees:** Usually, $100-1000$ trees are being grown. The more, the better. More trees also mean longer training time and larger models.
 - **Deep trees and diversification:** Single trees in a random forest are usually deep, thus they overfit on the training data. It is the diversity across trees that produces a good and stable model, just like a well-diversified stock portfolio. 
 - **Never trust performance on the training set for random forests.** The reason is the overfitting caused by the deep decision trees. Besides using the standard approaches to assess true performance (simple or cross-validation), we can study OOB results.
-- **Parameter tuning:** Random forests offer many tuning parameters. Since the results typically do not depend too much on their choice, untuned random forests are often great benchmark models, see also this [short video](https://www.youtube.com/watch?v=t8ooi_tJHSE) by Adele Cutler on working with Leo Breiman on random forests. (Remember: the main tuning parameter is "mtry").
+- **Parameter tuning:** Random forests offer many tuning parameters. Since the results typically do not depend too much on their choice, untuned random forests are often great benchmark models, see also this [short video](https://www.youtube.com/watch?v=t8ooi_tJHSE) by Adele Cutler on working with Leo Breiman on random forests. Besides "mtry", it can make sense to tune the tree depth.
 
 ### Example
 
@@ -357,7 +357,7 @@ ic <- ice(fit, v = v, X = diamonds[ix, ])
 plot(ic, color = "chartreuse4") +
   ggtitle(paste("ICE plot for", v))
 
-plot(ic, color = "chartreuse4", center = TRUE) |> 
+plot(ic, color = "chartreuse4", center = TRUE) +
   ggtitle(paste("c-ICE plot for", v))
 
 v <- "clarity"
@@ -366,7 +366,7 @@ ic <- ice(fit, v = v, X = diamonds[ix, ])
 plot(ic, color = "chartreuse4") +
   ggtitle(paste("ICE plot for", v))
 
-plot(ic, color = "chartreuse4", center = TRUE) |> 
+plot(ic, color = "chartreuse4", center = TRUE) +
   ggtitle(paste("c-ICE plot for", v))
 ```
 
@@ -417,7 +417,7 @@ Another way of combining decision trees to an ensemble model are gradient booste
 
 ## Boosting
 
-The idea of *boosting* was investigated e.g. in @schapire1990 and could be described as follows:
+The idea of *boosting* was investigated, e.g., in @schapire1990 and could be described as follows:
 
 1. Fit simple model $\hat f$ to data.
 2. For $k = 1, \dots, K$ do:
@@ -457,7 +457,7 @@ viewed as a function of the $n$ parameters
 $$
   f = \left(f(\boldsymbol x_1), \dots, f(\boldsymbol x_n)\right) \in \mathbb R^n,
 $$
-i.e. of the $n$ predictions on the training data.
+i.e., of the $n$ predictions on the training data.
 
 We proceed as in standard gradient descent:
 
@@ -527,14 +527,14 @@ For general loss functions, the algorithm is a bit more complicated:
 
 ## Modern implementations
 
-Modern implementations of gradient boosted trees include [XGBoost](https://xgboost.readthedocs.io/en/latest/), [LightGBM](https://lightgbm.readthedocs.io/en/latest/), and [CatBoost](https://catboost.ai/). These are the predominant algorithms in ML competitions on tabular data, check [this comparison](https://github.com/mayer79/gradient_boosting_comparison) for differences with a screenshot as per October 10, 2022:
+Modern implementations of gradient boosted trees include [XGBoost](https://xgboost.readthedocs.io/en/latest/), [LightGBM](https://lightgbm.readthedocs.io/en/latest/), and [CatBoost](https://catboost.ai/). These are the predominant algorithms in ML competitions on tabular data, check [this comparison](https://github.com/mayer79/gradient_boosting_comparison) for differences with a screenshot as per February 7, 2025:
 
 ![](figs/comparison_boosting.PNG). 
 
 They differ from Friedman's original approach in multiple ways, e.g.:
 
 - Second order gradients: XGBoost introduced the use of second order gradients, mainly removing the line-search step for all loss functions, see  @chen2016 or [this slide deck](https://web.njit.edu/~usman/courses/cs675_spring20/BoostedTree.pdf) from Tianqi Chen.
-- Histogram binning: LightGBM [@ke2017], a very fast competitor of XGBoost, introduced histogram binning: Continuous covariates are binned into a histogram (e.g. in $B = 255$ bins) before training, and their values are replaced by short unsigned integers representing the corresponding bin number. During tree growth, to determine the best split position of a given covariate, at most $B$ split positions must be evaluated instead of evaluating the loss gain for all unique feature values. This significantly speeds up tree construction. To activate histogram binning also for XGBoost, set `tree_method = "hist"`
+- Histogram binning: LightGBM [@ke2017], a very fast competitor of XGBoost, introduced histogram binning: Continuous covariates are binned into a histogram (e.g., in $B = 255$ bins) before training, and their values are replaced by short unsigned integers representing the corresponding bin number. During tree growth, to determine the best split position of a given covariate, at most $B$ split positions must be evaluated instead of evaluating the loss gain for all unique feature values. This significantly speeds up tree construction. Nowadays, histogram binning is standard, e.g., also in XGBoost.
 - Possibility to penalize the objective function.
 
 ### Example: XGBoost
@@ -545,6 +545,7 @@ As an initial example on gradient boosting and XGBoost, we fit a model for logar
 library(ggplot2)
 library(withr)
 library(xgboost)
+library(MetricsWeighted)
 
 diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
 
@@ -592,7 +593,7 @@ fit <- xgb.train(
 )
 
 # Test performance
-rmse(y_test, predict(fit, data.matrix(X_test)))  # 0.09876
+rmse(y_test, predict(fit, data.matrix(X_test)))  # 0.0988
 ```
 
 **Comments:** 
@@ -610,7 +611,7 @@ Gradient boosted trees offer many parameters to select from. Unlike with random 
 - **Learning rate $\lambda$:** The learning rate determines the training speed and the impact of each tree to the final model. Typical values are between 0.001 and 1. In practical applications, it is set to a value that leads to a reasonable amount of trees ($100 - 1000$). Usually, halving the learning rate means twice as much boosting rounds for comparable performance.
 
 - **Regularization parameters:** Depending on the implementation, additional parameters are
-    - the tree depth (often $3 - 7$) or the number of leaves (often $7 - 63$), 
+    - the tree depth (often $1 - 7$) or the number of leaves (often $2 - 63$), 
     - the strength of the L1 and/or L2 penalties added to the objective function (often between 0 and 5), 
     - the per-tree row subsampling rate (often between 0.8 and 1), 
     - the per-tree or per-split column subsampling rate (often between 0.6 and 1), 
@@ -694,7 +695,8 @@ if (tune) {
     colsample_bynode = c(0.8, 1), 
     subsample = c(0.8, 1), 
     min_child_weight = c(1, 10),
-    min_split_loss = c(0, 1e-04)
+    min_split_loss = c(0, 1e-04),
+    stringsAsFactors = FALSE
   )
 
  # Grid search or randomized search if grid is too large
@@ -750,7 +752,7 @@ Now, the model is ready to be inspected by evaluating
 # Performance on test data
 pred <- predict(fit, data.matrix(X_test))
 rmse(y_test, pred)                                       # 0.0985
-r_squared(y_test, pred, reference_mean = mean(y_train))  # 0.9906
+r_squared(y_test, pred, reference_mean = mean(y_train))  # 0.9907
 
 # Variable importance regarding MSE improvement
 imp <- xgb.importance(model = fit)

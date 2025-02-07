@@ -38,10 +38,10 @@ Before introducing these techniques, we will fix some notation and meet a compet
 
 Notation:
 
-- Loss function $L$: Used to measure loss of single observation, e.g. the squared error $L(y, z) = (y - z)^2$.
-- Total loss $Q(f, D) = \sum_{(y_i, \boldsymbol x_i) \in D} L(y_i, f(\boldsymbol x_i))$ of a data set $D$, e.g. the sum of squared errors. Used as objective criterion to fit $f$ on data $D$. Sometimes, the objective also contains a penalty term.
-- Average loss $\bar Q(f, D) = Q(f, D) / |D|$, e.g. the mean-squared error. Easier-to-read version of $Q$ as it does not grow with the sample size $|D|$.
-- Performance measure or evaluation metric $S(f, D)$ of interest, often $S = \bar Q$ or a function of it, e.g. the RMSE. Used to compare models or select hyper-parameters. Ideally consistent with $Q$.
+- Loss function $L$: Used to measure loss of single observation, e.g., the squared error $L(y, z) = (y - z)^2$.
+- Total loss $Q(f, D) = \sum_{(y_i, \boldsymbol x_i) \in D} L(y_i, f(\boldsymbol x_i))$ of a data set $D$, e.g., the sum of squared errors. Used as objective criterion to fit $f$ on data $D$. Sometimes, the objective also contains a penalty term.
+- Average loss $\bar Q(f, D) = Q(f, D) / |D|$, e.g., the mean-squared error. Easier-to-read version of $Q$ as it does not grow with the sample size $|D|$.
+- Performance measure or evaluation metric $S(f, D)$ of interest, often $S = \bar Q$ or a function of it, e.g., the RMSE. Used to compare models or select hyper-parameters. Ideally consistent with $Q$.
 
 While loss functions are used by the algorithm to *fit* the model, the evaluation metric helps to measure performance and to select models.
 
@@ -198,15 +198,18 @@ If our data set is large and training takes long, then the simple validation str
 5. Repeat Steps 2 to 4 until each piece was used for validation once.
 6. The average of the $K$ model performances yields the *CV performance* 
   $$
-    \hat S_{CV} = \frac{1}{K} \sum_{k = 1}^K \hat S_k.
+    \hat S_{CV} = \frac{1}{K} \sum_{k = 1}^K \hat S_k
+  $$
+  with standard error
+  $$
+    \text{SE}(\hat S_{CV}) = \text{Std}(\hat S) / \sqrt{K}.
   $$
 
 The CV performance is a good basis to choose the best and final model among alternatives. **The final model is re-trained on all folds.**
 
 **Notes**
 
-- The "best" model is typically the one with best CV performance. Depending on the situation, it could also be a model with "good CV performance and not too heavy overfit compared to in-sample performance" or some other reasonable criterion.
-- The standard deviation of $\hat S_1, \dots, \hat S_K$, and/or the standard error of $\hat S_{CV}$ gives an impression on the stability of the results.
+- The "best" model is typically the one with best CV performance. Depending on the situation, it could also be a model with "good CV performance and not too heavy overfit compared to in-sample performance" or the related "one standard-error rule": Pick the simplest (most regulated) model within one standard error of the best model.
 - If cross-validation is fast, you can repeat the process for additional data splits. Such *repeated* cross-validation leads to even more robust results.
 
 ## Example
@@ -239,7 +242,7 @@ with_seed(
 table(fold_ix)
 
 # Tuning grid with different values for parameter k
-paramGrid <- data.frame(RMSE = NA, k = 1:20)
+paramGrid <- data.frame(RMSE = NA, SE = NA, k = 1:20)
     
 # Calculate performance for each row in the parameter grid
 for (i in 1:nrow(paramGrid)) {
@@ -259,18 +262,21 @@ for (i in 1:nrow(paramGrid)) {
     scores[fold] <- RMSE(y_valid, pred)
   }
   paramGrid[i, "RMSE"] <- mean(scores)
+  paramGrid[i, "SE"] <- sd(scores) / sqrt(nfolds)
 }
 
-# Best CV-scores 
+# Best CV-scores and their standard errors
 head(paramGrid[order(paramGrid$RMSE), ], 2)
 
 ggplot(paramGrid, aes(x = k, y = RMSE)) +
   geom_point(color = "chartreuse4") +
   geom_line(color = "chartreuse4") +
-  ggtitle("Performance by cross-validation")
+  geom_errorbar(aes(ymin = RMSE - SE, ymax = RMSE + SE), width = 0) +
+  ggtitle("Performance by cross-validation", subtitle = "With standard errors")
 ```
 
-**Comment:** Using 7 neighbors seems to be the best choice regarding CV RMSE. Again, the fact that certain diamonds show up multiple times leaves a slightly bad feeling. Should we really trust these results?
+**Comment:** Using 7 neighbors seems to be the best choice regarding CV RMSE. Again, the fact that certain diamonds show up multiple times leaves a slightly bad feeling. Should we really trust these results? 
+Note: The "one standard-error rule" would suggest choosing 9 neighbors.
 
 ## Grid Search
 
@@ -351,7 +357,7 @@ with_seed(
 )
 
 # Cross-validation performance of k-nearest-neighbor for k = 1-20
-paramGrid <- data.frame(RMSE = NA, k = 1:20)
+paramGrid <- data.frame(RMSE = NA, SE = NA, k = 1:20)
 
 for (i in 1:nrow(paramGrid)) {
   k <- paramGrid[i, "k"]
@@ -369,6 +375,7 @@ for (i in 1:nrow(paramGrid)) {
     scores[fold] <- RMSE(y_valid_cv, pred)
   }
   paramGrid[i, "RMSE"] <- mean(scores)
+  paramGrid[i, "SE"] <- sd(scores) / sqrt(nfolds)
 }
 
 # Best CV performance
@@ -383,6 +390,7 @@ for (fold in 1:nfolds) {
   pred <- predict(fit, newdata = train[!insample, ])
   rmse_reg[fold] <- RMSE(y_train[!insample], pred)
 }
+rmse_reg_se <- sd(rmse_reg) / sqrt(nfolds)
 (rmse_reg <- mean(rmse_reg))
 
 # The overall best model is 6-nearest-neighbor
@@ -426,7 +434,7 @@ library(data.table)
 library(ggplot2)
 library(h2o)
 
-system.time( # 2 seconds
+system.time(
   dim(df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet"))  
 )
 
@@ -434,7 +442,7 @@ setDT(df)
 head(df)
 
 # Data prep
-system.time({  # 5 seconds
+system.time({
   df[, duration := as.numeric(
     difftime(tpep_dropoff_datetime, tpep_pickup_datetime, units = "mins")
   )]
@@ -458,7 +466,7 @@ h2o_split <- h2o.splitFrame(
   h2o_df, c(0.7, 0.2), destination_frames = c("train", "valid", "test")
 )
 
-system.time(  # 6 s
+system.time(  # 5 s
   fit <- h2o.glm(
     x = xvars, 
     y = "log_duration", 
@@ -492,7 +500,7 @@ fit_final  # Test R^2: 0.782
 
 The data is often split *randomly* into partitions or folds. As long as the rows are *independent*, this leads to honest estimates of model performance.
 
-However, if the rows are not independent, e.g. for time series data or grouped data, such a strategy is flawed and usually leads to overly optimistic results. **This is a common mistake in modeling.**
+However, if the rows are not independent, e.g., for time series data or grouped data, such a strategy is flawed and usually leads to overly optimistic results. **This is a common mistake in modeling.**
 
 ## Time-series data
 
@@ -511,7 +519,7 @@ In our example with diamonds data, it would be useful to have a column with diam
 
 ## Stratification
 
-*If rows are independent*, there is a variant of random splitting that can provide slightly better models: *stratified splitting*. With stratified splitting or stratified K-fold CV, rows are split to enforce similar distribution of a key variable across partitions/folds. Stratified splitting is often used when the response variable is binary and unbalanced. Unbalanced means that the proportion of "1" is close to 0 or 1.
+*If rows are independent*, there is a variant of random splitting that can provide slightly better models: *stratified splitting*. With stratified splitting or stratified K-fold CV, rows are split to enforce similar distribution of the response (or of another important variable) across partitions/folds. Stratified splitting is often used when the response variable is binary and unbalanced. Unbalanced means that the proportion of "1" is close to 0 or 1.
 
 # Excursion: SQL and Spark
 
@@ -533,7 +541,7 @@ We will introduce SQL with examples written in the in-process database [DuckDB](
 
 - It is easy to install.
 - It has no external dependencies.
-- It is fast.
+- It is extremely fast.
 - It supports working with csv/Parquet files as well as with R/Python tables.
 - It plays well together with Apache Arrow.
 - It works out-of-core, i.e., when data does not fit into RAM.
@@ -549,6 +557,9 @@ To familiarize you with SQL, we will write some basic SQL queries (= questions) 
 **Note that we use `head()` to keep the output slim. Usually, you would not need it.**
 
 ```{r}
+if (exists("diamonds")) {
+  rm(diamonds)
+}
 library(ggplot2)
 library(duckdb)
 
@@ -692,9 +703,11 @@ query <- "
   SELECT COUNT(*) AS N 
   FROM 'taxi/yellow_tripdata_2018-01.parquet'
 "
+
+# Instantaneous
 con |> 
   dbSendQuery(query) |> 
-  dbFetch() 
+  dbFetch()
 
 # Pickup location IDs with at least 100'000 rows
 # 'HAVING' is like a 'WHERE', but after a GROUP BY
@@ -749,7 +762,7 @@ head(df)
 
 [Apache Spark](https://spark.apache.org/) is an open-source, distributed processing system used for working with big data. It has been part of the Apache Software Foundation since 2013 and is used extensively in industry. Its SQL engine can be used to process data of any size, also from within R or Python. Spark is written in the programming language "Scala", which is being developed at EPFL Lausanne under the direction of Martin Odersky, the creator of Scala.
 
-Spark normally runs on a cluster consisting of many hundreds of nodes (= computers). For illustration purposes, however, we will use a normal laptop here, i.e. a "cluster" with only one node.
+Spark normally runs on a cluster consisting of many hundreds of nodes (= computers). For illustration purposes, however, we will use a normal laptop here, i.e., a "cluster" with only one node.
 
 ### Example: Diamonds
 
@@ -902,9 +915,12 @@ spark_disconnect(sc)
 
 # Exercises
 
+Don't forget to turn ordered factors into unordered ones.
+
 1. Use simple validation to determine whether a linear regression for `log(price)` with covariates `log(carat)`, `color`, `cut`, and `clarity` is better with or without interaction between `log(carat)` and `cut` regarding RMSE. Use a 80/20 data split. Make sure that the code is fully reproducible. 
 
 2. Use 5-fold cross-validation to select the best polynomial degree to represent `log(carat)` in a Gamma GLM for diamond prices with log-link (with additional covariates `color`, `cut`, and `clarity`). Evaluate the result on 10% test data. Use the average Gamma deviance as performance measure (function `deviance_gamma()` in the package "MetricsWeighted"). Again make sure that the code is fully reproducible.
+Bonus: What polynomial degree would you get with the "one standard-error rule"?
 
 3. How does repeated CV work? List one advantage and one disadvantage compared to standard cross-validation. When would you recommend grouped cross-validation and why? How does it work?
 

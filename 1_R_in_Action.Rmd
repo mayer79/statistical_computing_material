@@ -170,7 +170,8 @@ diamonds$color %>%
 # barplot(x, col = "chartreuse4")
 
 # Voila the new base R pipe:
-iris |> head(2)
+iris |> 
+  head(2)
 
 # Beautifully implemented:
 quote(iris |> head(2))
@@ -210,9 +211,9 @@ library(tidyverse)
 
 # Price and carat of the two most expensive diamonds
 diamonds |>
-  arrange(-price) |> 
   select(price, carat) |> 
-  head(2)
+  arrange(-price) |> 
+  slice(1:2)
 
 # Select diamonds >2 carat and calculate log(price) and log(carat)
 # Possible simplification: transmute() = mutate() + select()
@@ -223,7 +224,7 @@ diamonds |>
     log_carat = log(carat)
   ) |> 
   select(log_price, log_carat) |> 
-  head(2)
+  slice(1:2)
 
 # Median carat and price
 diamonds |> 
@@ -246,7 +247,7 @@ med
 diamonds |>
   select(price, starts_with("c")) |> 
   left_join(med, by = "clarity") |>
-  head(2)
+  slice(1:2)
 
 # Directly with a grouped mutate (imagine this without pipe...)
 diamonds |>
@@ -257,7 +258,7 @@ diamonds |>
     med_price = median(price)
   ) |> 
   ungroup() |> 
-  head(2)
+  slice(1:2)
 
 # Turn all ordered factors into unordered
 dia <- diamonds |> 
@@ -374,11 +375,12 @@ ggplot(aes(value)) +
 Another strength of "ggplot2" is that we can map columns not only to x and y coordinates, but also to aspects such as color, fill, alpha (transparency), shape, linetype and size:
 
 ```{r}
+# Here, "color" refers to the function argument, not the column name in diamonds
 ggplot(diamonds, mapping = aes(x = carat, y = price, color = clarity)) +
   geom_point(alpha = 0.2) +
   scale_x_log10() +
   scale_y_log10() +
-  guides(colour = guide_legend(override.aes = list(alpha = 1))) +
+  guides(color = guide_legend(override.aes = list(alpha = 1))) +
   theme(legend.position = "top")
 ```
 
@@ -393,8 +395,10 @@ library(ggplot2)
 library(plotly)
 
 # Mind the outer parentheses
-(ggplot(diamonds, mapping = aes(color)) +
-  geom_bar(fill = "chartreuse4")) |> 
+(
+  ggplot(diamonds, mapping = aes(color)) +
+  geom_bar(fill = "chartreuse4")
+) |> 
   ggplotly()
 ```
 
@@ -583,7 +587,7 @@ b <- a %% b  # GCD(a, b) unaffected by modulo
 b <- a %% b  # a modulo b
 ```
 
-Our final version of the function `gcd()` uses *input checks*. Note: for very large numbers above $2^{50}$, the function would start to return garbage because of floating point issues.
+Our final version of the function `gcd()` uses *input checks*. Note: for very large numbers above $2^{50}$, the function would start to return garbage because too long integers are converted to floats.
 
 ```r
 # Greatest common divisor
@@ -594,7 +598,7 @@ gcd <- function(a, b) {
     length(b) == 1,
     a >= 1,
     b >= 1,
-    a == trunc(a),
+    a == trunc(a),  # check if integer
     b == trunc(b),
     max(a, b) < 2^50
   )
@@ -688,7 +692,8 @@ error_bars <- function(xvar) {
   ggplot(dat, aes(x = .data[[xvar]], y = mean_price)) +
     geom_errorbar(
       aes(ymin = mean_price - sd_price, ymax = mean_price + sd_price),
-      color = "chartreuse4"
+      color = "chartreuse4",
+      width = 0.2
     ) +
     geom_point(size = 3) +
     labs(
@@ -763,7 +768,7 @@ This construction is often used in R.
 
 # Exercises
 
-1. Load the data `dataCar` from the package "insuranceData". It represents claim data on vehicle insurance policies from 2004 to 2005. Some variables like "gender" describe the policy holder, others like "veh_age" the vehicle, and some variables carry information on claims, e.g. "numclaims". Each row represents policy information valid in a certain time window. Use the pipe, "dplyr", and "ggplot2" to solve the following tasks.
+1. Load the data `dataCar` from the package "insuranceData". It represents claim data on vehicle insurance policies from 2004 to 2005. Some variables like "gender" describe the policy holder, others like "veh_age" the vehicle, and some variables carry information on claims, e.g., "numclaims". Each row represents policy information valid in a certain time window. Use the pipe, "dplyr", and "ggplot2" to solve the following tasks.
     a. Draw barplots of the discrete variables "numclaims", "agecat" (categorized driver age), and "gender".
     b. Draw a histogram of the vehicle value "veh_value" (in 10'000 Australian Dollars). Truncate values above 7 (this means: if a value is larger than 7, set it to 7).
     c. Calculate the average number of claims per level of "agecat" and visualize the result as a scatterplot. Interpret the result.
