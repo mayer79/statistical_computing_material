@@ -224,7 +224,7 @@ diamonds |>
     log_carat = log(carat)
   ) |> 
   select(log_price, log_carat) |> 
-  slice(1:2)
+  slice(1:2)  # Show first two rows only
 
 # Median carat and price
 diamonds |> 
@@ -247,7 +247,7 @@ med
 diamonds |>
   select(price, starts_with("c")) |> 
   left_join(med, by = "clarity") |>
-  slice(1:2)
+  slice(1:2)  # Show first two rows only
 
 # Directly with a grouped mutate (imagine this without pipe...)
 diamonds |>
@@ -258,7 +258,7 @@ diamonds |>
     med_price = median(price)
   ) |> 
   ungroup() |> 
-  slice(1:2)
+  slice(1:2)  # Show first two rows only
 
 # Turn all ordered factors into unordered
 dia <- diamonds |> 
