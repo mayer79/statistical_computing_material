@@ -48,7 +48,8 @@ Artificial neural nets are extremely versatile and powerful. They can be used to
 10. model data with spatial structure (images),
 11. fit models with many millions of parameters,
 12. do non-linear dimension reduction,
-13. and many more.
+13. build powerful chatbots,
+14. and many more.
 
 In this chapter, we will mainly deal with the first three aspects. Since a lot of new terms are being used, a small glossary can be found in Section "Neural Network Slang".
 
@@ -286,7 +287,7 @@ ggplot(aes(x = carat, y = price)) +
 
 ## Validation and tuning of main parameters
 
-So far, we have naively fitted the neural networks without splitting the data for test and validation. Don't do this! Usually, one sets a small test dataset (e.g. 10% of rows) aside to assess the final model performance and use simple (or cross-)validation for model tuning.
+So far, we have naively fitted the neural networks without splitting the data for test and validation. Don't do this! Usually, one sets a small test dataset (e.g., 10% of rows) aside to assess the final model performance and use simple (or cross-)validation for model tuning.
 
 In order to choose the main tuning parameters, namely
 
@@ -704,12 +705,12 @@ Let $T(Y)$ be a quantity of interest, e.g., an average diamond price, claims fre
     
 ## Example: Diamonds
 
-Let's apply above scheme for diamond prices.
+Let's apply above scheme for diamond prices. We use the {effectplots} package to simplify the process.
 
 ```{r}
 library(ggplot2)
 library(ranger)
-library(hstats)
+library(effectplots)
 library(withr)
 
 # STEP 1
@@ -717,12 +718,8 @@ mean(diamonds$price)
 
 # STEP 2
 xvars <- c("carat", "color", "cut", "clarity")
-for (v in xvars) {
-  p <- ggplot(diamonds, aes(.data[[v]], price)) +
-    stat_summary(fun = "mean", color = "chartreuse4") +
-    if (!ggplot2:::is.discrete(diamonds[[v]])) scale_x_binned()
-  print(p)
-}
+average_observed(diamonds[xvars], diamonds$price) |> 
+  plot()
 
 # STEP 3
 with_seed(
@@ -745,12 +742,8 @@ imp <- perm_importance(
 plot(imp, fill = "chartreuse4")
 
 # Add PDP to descriptive effect
-for (v in xvars) {
-  p <- partial_dep(fit, v = v, X = diamonds[ix, ]) |> 
-    plot(color = "chartreuse4") +
-    ggtitle(paste("PDP for", v))
-  print(p)
-}
+feature_effects(fit, data = diamonds, v = rownames(imp$M), y = "price") |> 
+  plot(rotate_x = 45)
 ```
 
 **Selected insights**

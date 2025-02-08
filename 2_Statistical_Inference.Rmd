@@ -140,22 +140,20 @@ for (n in c(1, 10, 50, 200)) {
 **Comments:**
 
 - The larger the sample size $n$, the more normal the histograms of the means appear. The difference between $n = 50$ and $n = 200$ is barely visible.
-- The case $n=1$ simply shows the histogram corresponding to a standard exponential distribution. It is very asymmetric and non-normal.
+- The case $n=1$ simply shows the histogram corresponding to a shifted exponential distribution. It is very asymmetric and non-normal.
 - Note that the sum of exponential random variables is Gamma distributed.
 
 ### From the CLT to confidence intervals
 
 In practice, we would have access to only *one sample*, and the underlying distribution $F$ of $X_i$ would be unknown. Why is the CLT still relevant? It helps to construct confidence intervals (CI) for $\mu$.
 
-By the CLT and if $n$ is not too small, the probability of the event
+By the CLT and if $n$ is not too small,
 $$
-  \mu - z_{1-\alpha/2} \sigma(\hat\mu) < \hat \mu < \mu + z_{1-\alpha/2}\sigma(\hat\mu)
+  P\big(-z_{1-\alpha/2} \le \frac{\hat\mu - \mu}{\sigma(\hat \mu)} \le z_{1 - \alpha/2}\big) \approx 1 - \alpha,
 $$
-is about $1 - \alpha$, and $z_\beta$ is the $\beta$-quantile of the standard normal distribution.
-
-Consequently,
+where $z_\beta$ is the $\beta$-quantile of the standard normal distribution. Solving for the unknown parameter $\mu$, we get
 $$
-  P\big(\hat\mu - z_{1-\alpha/2} \sigma(\hat\mu) < \mu < \hat \mu + z_{1-\alpha/2}\sigma(\hat\mu)\big) \approx 1 - \alpha.
+  P\big(\hat\mu - z_{1-\alpha/2} \sigma(\hat\mu) \le \mu \le \hat \mu + z_{1-\alpha/2}\sigma(\hat\mu)\big) \approx 1 - \alpha.
 $$
 Thus, an approximate $(1-\alpha)\cdot 100\%$-confidence interval for $\mu$ is given by
 
@@ -195,7 +193,7 @@ c(mu_hat - z * se_hat, mu_hat + z * se_hat)
 ci <- function(x, alpha = 0.05) {
   z <- qnorm(1 - alpha / 2)
   se <- sd(x) / sqrt(length(x))
-  out <- mean(x) + -1:1 * z * se
+  out <- mean(x) + (-1:1) * z * se
   names(out) <- c("lci", "estimate", "uci")
   out
 }
@@ -304,7 +302,7 @@ In this section, we will need the first two.
 
 ### Example: Mean
 
-Let's calculate the Bootstrap estimate of standard error for the sample mean, one of the only estimators where we can explicitly estimate its standard error from the data.
+Let's calculate the Bootstrap estimate of the standard error for the sample mean, one of the only estimators where we can also explicitly estimate its standard error from the data.
 
 ```{r}
 library(ggplot2)
@@ -334,7 +332,7 @@ ggplot(data.frame(Mean = boot), aes(x = Mean)) +
   ggtitle("Histogram of Bootstrap replications")
 ```
 
-**Comment:** The Bootstrap standard error is very similar to the usual estimate. Here, both are far away from the *true* standard error of the mean of 49 standard exponentials $(1 / 7 \approx 0.1429)$.
+**Comment:** The Bootstrap standard error is very similar to the usual estimate. Here, both are quite far away from the *true* standard error of the mean of 49 standard exponentials $(1 / 7 \approx 0.1429)$.
 
 According to @efron1993 (p. 47), 25 to 200 Bootstrap samples are usually sufficient to get a stable Bootstrap estimate of the standard error. The following curve indicates differently: We calculate the Bootstrap estimate of standard error for the first $b=20$ Bootstrap replications, then for the first $b=21$ replications etc. to see how fast the estimates stabilize.
 
@@ -343,13 +341,14 @@ plot_stability <- function(x) {  # x is the vector of Bootstrap replications
   df <- data.frame(x = x, b = 1:length(x))
   df$se <- sapply(df$b, function(i) sd(x[1:i]))  # "cumsd"
 
-  ggplot(subset(df, b >= 20), aes(b, se)) +
+  ggplot(subset(df, b >= 20), aes(b, y = se)) +
     geom_line(color = "chartreuse4") +
     ggtitle("Stability of Bootstrap Estimate of Standard Error")
 }
 
 plot_stability(boot) +
-  geom_hline(yintercept = sd(x) / sqrt(n))  # Estimated standard error of the mean
+  # Estimated standard error of the mean
+  geom_hline(yintercept = sd(x) / sqrt(n))
 ```
 
 **Comment:** The curve starts to stabilize around the standard estimate (horizontal black line) not before 1200 Bootstrap samples.
@@ -412,6 +411,7 @@ In the case of the median (and other quantiles), we actually do not need to rely
 
 ```{r}
 ci_median_nonpar <- function(x, alpha = 0.05, q = 0.5) {
+  # Use q != 0.5 for other quantiles
   K <- qbinom(c(alpha / 2, 1 - alpha / 2), length(x), q) + 0:1
   sort(x)[K]
 }
@@ -495,7 +495,7 @@ if (FALSE) {  # Trick to skip code block without commenting out
   )
 
 # saveRDS(result, "simulation/ci_median.rds")
-} else{
+} else {
   result <- readRDS("simulation/ci_median.rds")
 }
 
@@ -516,11 +516,11 @@ ggplot(aes(y = value, x = n, group = method, color = method)) +
   coord_cartesian(xlim = c(1, 100))
 ```
 
-**Comment:** The coverage probabilities are surprisingly close to the nominal coverage of 95%, even for the tiny sample size 9. The non-parametric intervals are conservative by construction. In this case, the standard normal confidence interval are slightly anti-conservative. 
+**Comment:** The coverage probabilities are surprisingly close to the nominal coverage of 95%, even for the tiny sample size 9. The non-parametric intervals are conservative by construction. In this example, the standard normal confidence interval are slightly anti-conservative. 
 
 ## Better CIs
 
-At the cost of more complexity, more accurate Bootstrap confidence intervals can be constructed. One is the bias-corrected and accelerated $BC_\alpha$ confidence interval, which is an improved version of the percentile method (using different order statistics as limits), and available in the "boot" package.
+At the cost of more complexity, more accurate Bootstrap confidence intervals can be constructed. One is the bias-corrected and accelerated $BC_\alpha$ confidence interval, which is an improved version of the percentile method (using different order statistics as limits). It is available in the "boot" package.
 
 ### Example: the "boot" package
 
@@ -583,7 +583,7 @@ ggplot(df, aes(group, value, fill = group)) +
   geom_boxplot(varwidth = TRUE, show.legend = FALSE) +
   scale_fill_viridis_d(begin = 0.5, end = 0.9)
   
-# Estimate for true mean(y1) - mean(y2)
+# Estimate of true mean(y1) - mean(y2)
 estimator <- function(y1, y2) {
   mean(y1) - mean(y2)
 }
@@ -773,7 +773,7 @@ independence_test(y ~ factor(x), distribution = approximate(nresample = 10000))
 
 **Comment:** Our permutation test gives very similar results to the one in the professional package "coin". They are also similar to the parametric version (see last example). In all cases, we can reject the null hypothesis of no true mean difference at the 5% level.
 
-According to the following figure, $B = 10000$ Monte-Carlo-samples seem large enough: The p values stabilizes relatively quickly.
+According to the following figure, $B = 10000$ Monte-Carlo-samples seem large enough: The p values stabilize relatively quickly.
 
 ```{r}
 successive_pvalues <- cumsum(perm_dist >= statistic(x, y)) / (1:B)
@@ -813,9 +813,11 @@ statistic <- function(x, y) {
 }
 
 # Simulation
-set.seed(20)
-pb <- txtProgressBar(max = nsim, style = 3)
 if (FALSE) {  # Set to TRUE to rerun
+  set.seed(20)
+  
+  pb <- txtProgressBar(max = nsim, style = 3)
+  
   for (i in 1:nsim) {
     y1 <- rexp(m, 1)
     y2 <- rexp(n, 1 / (1 + shift))
