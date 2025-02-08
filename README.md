@@ -94,4 +94,4 @@ This lecture is being distributed under the [creative commons license](https://c
 
 ## How to cite?
 
-Michael Mayer (2023), *Statistical Computing*, lecture notes, Institute of Mathematical Statistics and Actuarial Science, University of Bern. URL:  [https://github.com/mayer79/statistical_computing_material](https://github.com/mayer79/statistical_computing_material)
+Michael Mayer (2025), *Statistical Computing*, lecture notes, Institute of Mathematical Statistics and Actuarial Science, University of Bern. URL:  [https://github.com/mayer79/statistical_computing_material](https://github.com/mayer79/statistical_computing_material)
