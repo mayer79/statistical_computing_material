@@ -212,7 +212,7 @@ library(tidyverse)
 # Price and carat of the two most expensive diamonds
 diamonds |>
   select(price, carat) |> 
-  arrange(-price) |> 
+  arrange(desc(price)) |> 
   slice(1:2)
 
 # Select diamonds >2 carat and calculate log(price) and log(carat)
@@ -358,7 +358,7 @@ p + geom_smooth()
 One of the strengths of "ggplot2" are grouped plots using `facet_wrap()` and `facet_grid()`. Creating a scatterplot per color? Just add a `facet` layer:
 
 ```{r}
-p + facet_wrap(~ color)
+p + facet_wrap("color")
 ```
 
 Combining faceting with data reshaping, we can draw histograms of multiple variables:
@@ -380,6 +380,7 @@ ggplot(diamonds, mapping = aes(x = carat, y = price, color = clarity)) +
   geom_point(alpha = 0.2) +
   scale_x_log10() +
   scale_y_log10() +
+  scale_color_viridis_d() +
   guides(color = guide_legend(override.aes = list(alpha = 1))) +
   theme(legend.position = "top")
 ```
