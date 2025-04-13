@@ -140,7 +140,11 @@ RMSE <- function(y, pred) {
   sqrt(mean((y - pred)^2))
 }
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 # Split diamonds into 80% for "training" and 20% for validation
 with_seed(
@@ -153,27 +157,44 @@ valid <- diamonds[-ix, ]
 
 # Tree without bagging for comparison
 form <- log_price ~ log_carat + clarity + color + cut
-fit_unbagged <- rpart(form, data = train, xval = 0, cp = -1, maxdepth = 8)
+fit_unbagged <- rpart(
+  form,
+  data = train,
+  xval = 0,
+  cp = -1,
+  maxdepth = 8
+)
 rmse_unbagged <- RMSE(valid$log_price, predict(fit_unbagged, valid))
 
-# Fit B models on B bootstrap samples and store their predictions on the validation data
-# (one column per bootstrap sample)
+# Fit B models on B bootstrap samples and store their predictions
+# on the validation data (one column per bootstrap sample)
 B <- 20
 valid_pred <- matrix(nrow = nrow(valid), ncol = B)
 for (j in 1:B) {
   data_boot <- train[sample(nrow(train), replace = TRUE), ]
-  fit_boot <- rpart(form, data = data_boot, xval = 0, cp = -1, maxdepth = 8)
+  fit_boot <- rpart(
+    form,
+    data = data_boot,
+    xval = 0,
+    cp = -1,
+    maxdepth = 8
+  )
   valid_pred[, j] <- predict(fit_boot, valid)
 }
 
-# Very high correlations across model predictions (subset of three models shown)
+# Very high correlations across model predictions
+# (subset of three models shown)
 round(cor(valid_pred[, 1:3]), 3)
 
 # Row-wise successive mean predictions
-pred_bagged <- t(apply(valid_pred, 1, function(z) cumsum(z) / 1:length(z)))
+pred_bagged <- t(
+  apply(valid_pred, 1, function(z) cumsum(z) / 1:length(z))
+)
 
 # Validation RMSE per column
-rmse_bagged <- apply(pred_bagged, 2, function(z) RMSE(valid$log_price, z))
+rmse_bagged <- apply(
+  pred_bagged, 2, function(z) RMSE(valid$log_price, z)
+)
 
 # Visualization
 rmse_bagged |>
@@ -245,7 +266,11 @@ library(withr)
 library(ranger)
 library(MetricsWeighted)
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 y <- "log_price"
 xvars <- c("log_carat", "color", "cut", "clarity")
@@ -269,8 +294,9 @@ fit
 pred <- predict(fit, diamonds[-ix, ])$predictions
 y_test <- diamonds[-ix, y]
 rmse(y_test, pred) # 0.1020
+
 # Reference (intercept only) model "fitted" on training data
-r_squared(y_test, pred, reference_mean = mean(diamonds[ix, y])) # 0.9900
+r_squared(y_test, pred, reference_mean = mean(diamonds[ix, y])) # 0.99
 
 # Size of the fitted model
 format(object.size(fit), units = "auto")
@@ -542,7 +568,7 @@ insample <- 1:750
 x_train <- x[insample]
 y_train <- y[insample]
 
-# Boosted tree stumps. Can also use higher depth for faster convergence
+# Boosted tree stumps. Or use deeper trees for faster convergence
 fit <- xgb.train(
   params = list(learning_rate = 1, max_depth = 1),
   data = xgb.DMatrix(cbind(x = x_train), label = y_train),
@@ -553,7 +579,8 @@ fit <- xgb.train(
 df_plot <- data.frame(x = x, Truth = y)
 N <- c(1, 2, 10, 100, 1000)
 for (n in N) {
-  df_plot[as.character(n)] <- predict(fit, cbind(x = x), iteration = c(1, n + 1))
+  df_plot[as.character(n)] <-
+    predict(fit, cbind(x = x), iteration = c(1, n + 1))
 }
 
 # Transpose for plotting
@@ -590,7 +617,11 @@ library(withr)
 library(xgboost)
 library(MetricsWeighted)
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 y <- "log_price"
 xvars <- c("log_carat", "color", "cut", "clarity")
@@ -616,7 +647,8 @@ params <- list(
   learning_rate = 0.1
 )
 
-# Add trees until CV validation MSE stops improving over the last 20 rounds
+# Add trees until CV validation MSE stops improving over
+# last 20 rounds
 cvm <- xgb.cv(
   params = params,
   data = dtrain,
@@ -627,7 +659,7 @@ cvm <- xgb.cv(
   print_every_n = 50
 )
 
-# Fit model on full training data using optimal number of boosting round
+# Fit model on full training data using optimal number of rounds
 fit <- xgb.train(
   params = params,
   data = dtrain,
@@ -675,15 +707,19 @@ Remark: Since the learning rate, the number of boosting rounds, and other regula
 We will use XGBoost to fit diamond prices using the squared error as loss function and RMSE as corresponding evaluation metric, now using a sophisticated tuning strategy.
 
 ```{r}
-# This code is pretty long. It may serve as a general template to fit a
-# high-performance XGBoost model
+# This code is pretty long. It may serve as a general template to fit
+# a high-performance XGBoost model
 library(ggplot2)
 library(withr)
 library(xgboost)
 library(MetricsWeighted)
 library(hstats)
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 y <- "log_price"
 xvars <- c("log_carat", "color", "cut", "clarity")
@@ -707,7 +743,8 @@ dtrain <- xgb.DMatrix(data.matrix(X_train), label = y_train)
 tune <- FALSE
 
 if (tune) {
-  # Use default parameters to set learning rate with suitable number of rounds
+  # Use default parameters to set learning rate with suitable
+  # number of rounds
   params <- list(
     objective = "reg:squarederror",
     learning_rate = 0.1
@@ -723,7 +760,7 @@ if (tune) {
     showsd = FALSE,
     print_every_n = 50
   )
-  cvm # -> a lr of 0.1 provides about 200 trees, which is a convenient amount
+  cvm # -> a lr of 0.1 provides ~200 trees, which seems convenient
 
   # Final grid search after some iterations
   grid <- expand.grid(
@@ -750,7 +787,7 @@ if (tune) {
     grid_size <- max_size
   }
 
-  # Loop over grid and fit XGBoost with five-fold CV and early stopping
+  # Loop over grid and fit XGBoost with 5-fold CV and early stopping
   pb <- txtProgressBar(0, grid_size, style = 3)
   for (i in seq_len(grid_size)) {
     cvm <- xgb.cv(
@@ -834,21 +871,31 @@ df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet")
 setDT(df)
 head(df)
 
-# =======================================================================
+# ====================================================================
 # Prepare data for modeling
-# =======================================================================
+# ====================================================================
 
-df[, duration := as.numeric(
-  difftime(tpep_dropoff_datetime, tpep_pickup_datetime, units = "mins")
-)]
+df[
+  ,
+  duration := as.numeric(
+    difftime(
+      tpep_dropoff_datetime,
+      tpep_pickup_datetime,
+      units = "mins"
+    )
+  )
+]
 df <- df[between(trip_distance, 0.2, 100) & between(duration, 1, 120)]
-df[, `:=`(
-  pu_hour = factor(data.table::hour(tpep_pickup_datetime)),
-  weekday = factor(data.table::wday(tpep_pickup_datetime)), # 1 = Sunday
-  pu_loc = forcats::fct_lump_min(factor(PULocationID), 1e5),
-  log_duration = log(duration),
-  log_distance = log(trip_distance)
-)]
+df[
+  ,
+  `:=`(
+    pu_hour = factor(data.table::hour(tpep_pickup_datetime)),
+    weekday = factor(data.table::wday(tpep_pickup_datetime)), # 1 = Su
+    pu_loc = forcats::fct_lump_min(factor(PULocationID), 1e5),
+    log_duration = log(duration),
+    log_distance = log(trip_distance)
+  )
+]
 
 xvars <- c("log_distance", "weekday", "pu_hour", "pu_loc")
 y <- "log_duration"
@@ -874,9 +921,9 @@ dtrain <- lgb.Dataset(
 
 grid_file <- "taxi/taxi_lgb.rds"
 
-# =======================================================================
+# ====================================================================
 # Tune model using strategy outlined above (use as LightGBM template)
-# =======================================================================
+# ====================================================================
 
 tune <- FALSE
 
@@ -886,7 +933,7 @@ if (tune) {
   params <- list(
     learning_rate = 1,
     objective = "mse",
-    num_threads = 7 # choose number of threads in line with your system
+    num_threads = 7 # choose number of threads
   )
 
   cvm <- lgb.cv(
@@ -941,9 +988,9 @@ if (tune) {
   }
 }
 
-# =======================================================================
+# ====================================================================
 # Fit model on best parameter combination
-# =======================================================================
+# ====================================================================
 
 grid <- readRDS(grid_file) |>
   arrange(score)
@@ -961,9 +1008,9 @@ if (FALSE) { # Set to true to refit
   fit_lgb <- lgb.load("taxi/fit_lgb.txt")
 }
 
-# =======================================================================
+# ====================================================================
 # Inspect
-# =======================================================================
+# ====================================================================
 
 # Performance on test data
 pred <- predict(fit_lgb, data.matrix(X_test))

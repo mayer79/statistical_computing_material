@@ -21,8 +21,8 @@ knit: (function(input, ...) {rmarkdown::render(input, output_dir = "docs")})
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  echo = TRUE, 
-  warning = FALSE, 
+  echo = TRUE,
+  warning = FALSE,
   message = FALSE,
   eval = TRUE
 )
@@ -94,14 +94,14 @@ library(keras)
 input <- layer_input(shape = 1)
 
 # Output layer connected to the input layer
-output <- input |> 
+output <- input |>
   layer_dense(units = 1)
 
 # Create and compile model
 nn <- keras_model(inputs = input, outputs = output)
 # summary(nn)
 
-nn |> 
+nn |>
   compile(
     optimizer = optimizer_adam(learning_rate = 1),
     loss = "mse",
@@ -109,12 +109,13 @@ nn |>
   )
 
 # Fit model - naive without validation
-history <- nn |> 
+history <- nn |>
   fit(
     x = diamonds$carat,
     y = diamonds$price,
     epochs = 30,
-    batch_size = 100
+    batch_size = 100,
+    verbose = 0
   )
 
 plot(history, metrics = "root_mean_squared_error")
@@ -122,9 +123,9 @@ plot(history, metrics = "root_mean_squared_error")
 unlist(get_weights(nn))
 
 # Plot effect of carat on average price
-data.frame(carat = seq(0.3, 3, by = 0.1)) |> 
-  transform(price = predict(nn, carat, verbose = 0)) |> 
-ggplot(aes(x = carat, y = price)) +
+data.frame(carat = seq(0.3, 3, by = 0.1)) |>
+  transform(price = predict(nn, carat, verbose = 0)) |>
+  ggplot(aes(x = carat, y = price)) +
   geom_line(color = "chartreuse4") +
   geom_point(color = "chartreuse4")
 ```
@@ -182,14 +183,14 @@ input <- layer_input(shape = 1)
 
 # One hidden layer
 output <- input |>
-  layer_dense(units = 5) |>  # the only new line of code!
+  layer_dense(units = 5) |> # the only new line of code!
   layer_dense(units = 1)
 
 # Create and compile model
 nn <- keras_model(inputs = input, outputs = output)
 # summary(nn)
 
-nn |> 
+nn |>
   compile(
     optimizer = optimizer_adam(learning_rate = 1),
     loss = "mse",
@@ -197,19 +198,19 @@ nn |>
   )
 
 # Fit model - naive without validation
-nn |> 
+nn |>
   fit(
     x = diamonds$carat,
     y = diamonds$price,
     epochs = 30,
-    batch_size = 100, 
+    batch_size = 100,
     verbose = 0
   )
 
 # Plot effect of carat on average price
-data.frame(carat = seq(0.3, 3, by = 0.1)) |> 
-  transform(price = predict(nn, carat, verbose = 0)) |> 
-ggplot(aes(x = carat, y = price)) +
+data.frame(carat = seq(0.3, 3, by = 0.1)) |>
+  transform(price = predict(nn, carat, verbose = 0)) |>
+  ggplot(aes(x = carat, y = price)) +
   geom_line(color = "chartreuse4") +
   geom_point(color = "chartreuse4")
 ```
@@ -250,13 +251,13 @@ input <- layer_input(shape = 1)
 
 # One hidden layer
 output <- input |>
-  layer_dense(units = 5, activation = "tanh") |> 
+  layer_dense(units = 5, activation = "tanh") |>
   layer_dense(units = 1, activation = "linear")
 
 # Create and compile model
 nn <- keras_model(inputs = input, outputs = output)
 
-nn |> 
+nn |>
   compile(
     optimizer = optimizer_adam(learning_rate = 0.2),
     loss = "mse",
@@ -264,19 +265,19 @@ nn |>
   )
 
 # Fit model - naive without validation
-nn |> 
+nn |>
   fit(
     x = diamonds$carat,
     y = diamonds$price,
     epochs = 50,
-    batch_size = 100, 
+    batch_size = 100,
     verbose = 0
   )
 
 # Plot effect of carat on average price
-data.frame(carat = seq(0.3, 3, by = 0.1)) |> 
-  transform(price = predict(nn, carat, verbose = 0)) |> 
-ggplot(aes(x = carat, y = price)) +
+data.frame(carat = seq(0.3, 3, by = 0.1)) |>
+  transform(price = predict(nn, carat, verbose = 0)) |>
+  ggplot(aes(x = carat, y = price)) +
   geom_line(color = "chartreuse4") +
   geom_point(color = "chartreuse4")
 ```
@@ -383,14 +384,18 @@ library(keras)
 library(MetricsWeighted)
 library(hstats)
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 y <- "log_price"
 xvars <- c("log_carat", "color", "cut", "clarity")
 
 # Split into train and test
 with_seed(
-  9838, 
+  9838,
   ix <- sample(nrow(diamonds), 0.8 * nrow(diamonds))
 )
 
@@ -406,7 +411,7 @@ y_test <- test[[y]]
 # Standardization information using X_train
 temp <- scale(data.matrix(X_train))
 sc <- list(
-  center = attr(temp, "scaled:center"), 
+  center = attr(temp, "scaled:center"),
   scale = attr(temp, "scaled:scale")
 )
 
@@ -425,15 +430,15 @@ input <- layer_input(shape = 4)
 
 # Two hidden layers with contracting number of nodes
 output <- input |>
-  layer_dense(units = 30, activation = "relu") |> 
-  layer_dense(units = 15, activation = "relu") |> 
+  layer_dense(units = 30, activation = "relu") |>
+  layer_dense(units = 15, activation = "relu") |>
   layer_dense(units = 1, activation = "linear")
 
 # Create and compile model
 nn <- keras_model(inputs = input, outputs = output)
 summary(nn)
 
-nn |> 
+nn |>
   compile(
     optimizer = optimizer_adam(learning_rate = 0.05),
     loss = "mse",
@@ -445,24 +450,28 @@ cb <- list(
   callback_early_stopping(patience = 20),
   callback_reduce_lr_on_plateau(patience = 5)
 )
-       
+
 # Fit model
-history <- nn |> 
+history <- nn |>
   fit(
     x = prep_nn(X_train),
     y = y_train,
     epochs = 100,
-    batch_size = 400, 
+    batch_size = 400,
     validation_split = 0.2,
     callbacks = cb,
     verbose = 0
   )
 
 plot(history, metrics = "root_mean_squared_error", smooth = FALSE) +
-  coord_cartesian(xlim = c(2, length(history$metrics$loss)), ylim = c(0.1, 0.2))
+  coord_cartesian(
+    xlim = c(2, length(history$metrics$loss)), ylim = c(0.1, 0.2)
+  )
 
 # Interpret
-pred_fun <- function(m, X) predict(m, prep_nn(X), batch_size = 1000, verbose = 0)
+pred_fun <- function(m, X) {
+  predict(m, prep_nn(X), batch_size = 1000, verbose = 0)
+}
 
 # Performance on validation data
 pred <- pred_fun(nn, X_test)
@@ -473,9 +482,9 @@ r_squared(y_test, pred, reference_mean = mean(y_train))
 
 # PDPs
 for (v in xvars) {
-  p <- partial_dep(nn, v = v, X = X_train, pred_fun = pred_fun) |> 
+  p <- partial_dep(nn, v = v, X = X_train, pred_fun = pred_fun) |>
     plot(color = "chartreuse4") +
-    ggtitle(paste("PDP for", v)) 
+    ggtitle(paste("PDP for", v))
   print(p)
 }
 ```
@@ -506,7 +515,13 @@ Most of the text of this section is taken from our [responsible ML lecture]( htt
 ## Example: Diamonds (continued)
 
 ```{r}
-perm_importance(nn, X = X_test, y = y_test, pred_fun = pred_fun, verbose = FALSE) |> 
+perm_importance(
+  nn,
+  X = X_test,
+  y = y_test,
+  pred_fun = pred_fun,
+  verbose = FALSE
+) |>
   plot(fill = "chartreuse4")
 ```
 
@@ -537,28 +552,39 @@ df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet")
 setDT(df)
 head(df)
 
-#=======================================================================
+# =======================================================================
 # Prepare data for modeling
-#=======================================================================
+# =======================================================================
 
-df[, duration := as.numeric(
-    difftime(tpep_dropoff_datetime, tpep_pickup_datetime, units = "mins")
-  )]
-df = df[between(trip_distance, 0.2, 100) & between(duration, 1, 120)]
-df[, `:=`(
-  pu_hour = factor(data.table::hour(tpep_pickup_datetime)),
-  weekday = factor(data.table::wday(tpep_pickup_datetime)), # 1 = Sunday
-  pu_loc = forcats::fct_lump_min(factor(PULocationID), 1e5),
-  log_duration = log(duration),
-  log_distance = log(trip_distance)
-)]
+df[
+  ,
+  duration := as.numeric(
+    difftime(
+      tpep_dropoff_datetime,
+      tpep_pickup_datetime,
+      units = "mins"
+    )
+  )
+]
+df <- df[between(trip_distance, 0.2, 100) & between(duration, 1, 120)]
+df[
+  ,
+  `:=`(
+    pu_hour = factor(data.table::hour(tpep_pickup_datetime)),
+    weekday = factor(data.table::wday(tpep_pickup_datetime)), # 1 = Su
+    pu_loc = forcats::fct_lump_min(factor(PULocationID), 1e5),
+    log_duration = log(duration),
+    log_distance = log(trip_distance)
+  )
+]
 
 y <- "log_duration"
 x_dense <- c("log_distance", "weekday", "pu_hour")
 xvars <- c(x_dense, "pu_loc")
 
 # Random split
-with_seed(1, 
+with_seed(
+  1,
   ix <- sample(nrow(df), 0.8 * nrow(df))
 )
 train <- as.data.frame(df[ix, c(y, xvars), with = FALSE])
@@ -577,11 +603,15 @@ sc <- list(
   scale = attr(temp, "scaled:scale")
 )
 
-# Function that maps data.frame to network input 
-# (a list with a scaled matrix and an integer vector representing pu_loc)
+# Function that maps data.frame to network input (a list with
+# a scaled matrix and an integer vector representing pu_loc)
 prep_nn <- function(X, dense = x_dense, scaling = sc) {
   X_dense <- data.matrix(X[, dense, drop = FALSE])
-  X_dense <- scale(X_dense, center = scaling$center, scale = scaling$scale)
+  X_dense <- scale(
+    X_dense,
+    center = scaling$center,
+    scale = scaling$scale
+  )
   list(dense1 = X_dense, pu_loc = as.integer(X$pu_loc) - 1)
 }
 
@@ -597,15 +627,18 @@ input_dense <- layer_input(shape = length(x_dense), name = "dense1")
 input_pu_loc <- layer_input(shape = 1, name = "pu_loc")
 
 # Embedding of pu_loc
-emb_pu_loc <- input_pu_loc |> 
-  layer_embedding(input_dim = nlevels(train$pu_loc) + 1, output_dim = 10) |> 
+emb_pu_loc <- input_pu_loc |>
+  layer_embedding(
+    input_dim = nlevels(train$pu_loc) + 1,
+    output_dim = 10
+  ) |>
   layer_flatten()
 
 # Combine dense input and embedding, and add dense layers
 outputs <- list(input_dense, emb_pu_loc) |>
-  layer_concatenate() |> 
+  layer_concatenate() |>
   layer_dense(100, activation = "relu") |>
-  layer_dense(10, activation = "relu") |> 
+  layer_dense(10, activation = "relu") |>
   layer_dense(1, activation = "linear")
 
 # Input
@@ -615,8 +648,11 @@ inputs <- list(dense1 = input_dense, pu_loc = input_pu_loc)
 nn <- keras_model(inputs = inputs, outputs = outputs)
 summary(nn)
 
-nn |> 
-  compile(optimizer = optimizer_adam(learning_rate = 0.005), loss = "mse")
+nn |>
+  compile(
+    optimizer = optimizer_adam(learning_rate = 0.005),
+    loss = "mse"
+  )
 
 # Callbacks
 cb <- list(
@@ -625,13 +661,13 @@ cb <- list(
 )
 
 # Fit model
-if (FALSE) {  # Set to true to refit
-  history <- nn |> 
+if (FALSE) { # Set to true to refit
+  history <- nn |>
     fit(
       x = prep_nn(X_train),
       y = y_train,
       epochs = 100,
-      batch_size = 50000, 
+      batch_size = 50000,
       validation_split = 0.2,
       callbacks = cb,
       verbose = 0
@@ -643,11 +679,13 @@ if (FALSE) {  # Set to true to refit
   load_model_weights_hdf5(nn, "taxi/taxi_nn.h5")
 }
 
-#=======================================================================
+# ====================================================================
 # Inspect
-#=======================================================================
+# ====================================================================
 
-pred_fun <- function(m, X) predict(m, prep_nn(X), batch_size = 50000, verbose = 0)
+pred_fun <- function(m, X) {
+  predict(m, prep_nn(X), batch_size = 50000, verbose = 0)
+}
 
 # Performance on test data
 pred <- pred_fun(nn, X_test)
@@ -655,14 +693,20 @@ rmse(y_test, pred)
 r_squared(y_test, pred, reference_mean = mean(y_train))
 
 # Permutation importance
-perm_importance(nn, X = X_test, y = y_test, pred_fun = pred_fun, verbose = FALSE) |> 
+perm_importance(
+  nn,
+  X = X_test,
+  y = y_test,
+  pred_fun = pred_fun,
+  verbose = FALSE
+) |>
   plot(fill = "chartreuse4")
 
 # PDPs
 for (v in xvars) {
-  p <- partial_dep(nn, v = v, X = X_train, pred_fun = pred_fun) |> 
+  p <- partial_dep(nn, v = v, X = X_train, pred_fun = pred_fun) |>
     plot(color = "chartreuse4", rotate_x = (v == "pu_loc")) +
-    ggtitle(paste("PDP for", v)) 
+    ggtitle(paste("PDP for", v))
   print(p)
 }
 ```
@@ -718,31 +762,39 @@ mean(diamonds$price)
 
 # STEP 2
 xvars <- c("carat", "color", "cut", "clarity")
-average_observed(diamonds[xvars], diamonds$price) |> 
+average_observed(diamonds[xvars], diamonds$price) |>
   plot()
 
 # STEP 3
 with_seed(
-  9838, 
+  9838,
   ix <- sample(nrow(diamonds), 0.8 * nrow(diamonds))
 )
 
 fit <- ranger(
-  reformulate(xvars, "price"), 
+  reformulate(xvars, "price"),
   num.trees = 500,
-  data = diamonds[ix, ], 
+  data = diamonds[ix, ],
   seed = 83
 )
 fit
 
 # Importance wrt test MSE
 imp <- perm_importance(
-  fit, X = diamonds[-ix, xvars], y = diamonds$price[-ix], verbose = FALSE
+  fit,
+  X = diamonds[-ix, xvars],
+  y = diamonds$price[-ix],
+  verbose = FALSE
 )
 plot(imp, fill = "chartreuse4")
 
 # Add PDP to descriptive effect
-feature_effects(fit, data = diamonds, v = rownames(imp$M), y = "price") |> 
+feature_effects(
+  fit,
+  data = diamonds,
+  v = rownames(imp$M),
+  y = "price"
+) |>
   plot(rotate_x = 45)
 ```
 
@@ -759,9 +811,9 @@ feature_effects(fit, data = diamonds, v = rownames(imp$M), y = "price") |>
 2. Fit a neural network to (non-logarithmic) diamond prices by minimizing Gamma deviance with log-link (-> exponential output activation). Use the custom loss function defined below. Tune the model by simple validation and evaluate it on a test dataset. Study test performance, permutation importance, and partial dependence plots. Hints: Play with activation functions. Furthermore, the response needs to be transformed from int to float for certain TensorFlow versions.
 
     ```{r, eval=FALSE}
-    loss_gamma <- function(y_true, y_pred) {
-      -k_log(y_true / y_pred) + y_true / y_pred
-    }
+loss_gamma <- function(y_true, y_pred) {
+  -k_log(y_true / y_pred) + y_true / y_pred
+}
     ```
 
 3. (Optional) Craft a neural net for the "dataCar" dataset. The binary response is "clm", and the features are "veh_value", "veh_age", "gender", "area", "agecat", and "veh_body". Represent the latter with a one-dimensional embedding layer. You can either write the code from scratch or modify above taxi trip code. Work with a clean train/test split. Study test performance, permutation importance, and partial dependence plots.
