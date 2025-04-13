@@ -110,8 +110,12 @@ for (n in c(1, 10, 50, 200)) {
   }
   hist(
     means,
-    breaks = 99, main = paste("n =", n), col = "orange",
-    border = "orange", xlim = c(0, 6), probability = TRUE
+    breaks = 99,
+    main = paste("n =", n),
+    col = "orange",
+    border = "orange",
+    xlim = c(0, 6),
+    probability = TRUE
   )
 }
 ```
@@ -242,7 +246,10 @@ head(results)
 mean(results$ok)
 
 # Plot confidence intervals of 100 samples (lengthy ggplot...)
-ggplot(results[1:100, ], aes(x = rank(estimate), y = estimate, color = ok)) +
+ggplot(
+  results[1:100, ],
+  aes(x = rank(estimate), y = estimate, color = ok)
+) +
   geom_point() +
   geom_errorbar(aes(ymin = lci, ymax = uci)) +
   geom_hline(yintercept = mu, color = "darkgray") +
@@ -373,7 +380,8 @@ set.seed(30)
 n <- 49
 x <- rexp(n)
 
-# Sample median (Population median is ln(2) / lambda = ln(2) \approx 0.693)
+# Sample median
+# Note: Population median is ln(2) / lambda = ln(2) \approx 0.693
 median(x)
 
 boot <- replicate(2000, median(sample(x, replace = TRUE)))
@@ -491,8 +499,12 @@ if (FALSE) { # Trick to skip code block without commenting out
         x <- rexp(as.integer(n))
         boot <- replicate(9999, median(sample(x, replace = TRUE)))
 
-        result[n, "Norm", i] <- is_ok(median(x) + c(-1, 1) * qnorm(0.975) * sd(boot))
-        result[n, "Perc", i] <- is_ok(quantile(boot, c(0.025, 0.975), names = FALSE))
+        result[n, "Norm", i] <- is_ok(
+          median(x) + c(-1, 1) * qnorm(0.975) * sd(boot)
+        )
+        result[n, "Perc", i] <- is_ok(
+          quantile(boot, c(0.025, 0.975), names = FALSE)
+        )
         result[n, "NP", i] <- is_ok(ci_median_nonpar(x))
 
         setTxtProgressBar(pb, i)
@@ -538,7 +550,11 @@ set.seed(30)
 n <- 49
 x <- rexp(n) # Population median is ln(2) / lambda = ln(2)
 
-boot_dist <- boot(x, statistic = function(x, id) median(x[id]), R = 9999)
+boot_dist <- boot(
+  x,
+  statistic = function(x, id) median(x[id]),
+  R = 9999
+)
 boot.ci(boot_dist)
 ```
 
@@ -584,7 +600,10 @@ y1 <- rexp(m, 1 / 2)
 y2 <- rexp(n, 1)
 
 # Plot data
-df <- data.frame(value = c(y1, y2), group = rep(c("A", "B"), times = c(m, n)))
+df <- data.frame(
+  value = c(y1, y2),
+  group = rep(c("A", "B"), times = c(m, n))
+)
 ggplot(df, aes(group, value, fill = group)) +
   geom_boxplot(varwidth = TRUE, show.legend = FALSE) +
   scale_fill_viridis_d(begin = 0.5, end = 0.9)
@@ -774,7 +793,10 @@ mean(perm_dist >= statistic(x, y))
 # Via "coin" package
 library(coin)
 
-independence_test(y ~ factor(x), distribution = approximate(nresample = 10000))
+independence_test(
+  y ~ factor(x),
+  distribution = approximate(nresample = 10000)
+)
 ```
 
 **Comment:** Our permutation test gives very similar results to the one in the professional package "coin". They are also similar to the parametric version (see last example). In all cases, we can reject the null hypothesis of no true mean difference at the 5% level.
@@ -811,7 +833,9 @@ n <- 40
 shift <- (what == "Power") # 0 or 1
 
 result <- matrix(
-  nrow = nsim, ncol = 3, dimnames = list(NULL, c("Welch", "Student", "Perm"))
+  nrow = nsim,
+  ncol = 3,
+  dimnames = list(NULL, c("Welch", "Student", "Perm"))
 )
 
 statistic <- function(x, y) {
@@ -832,7 +856,8 @@ if (FALSE) { # Set to TRUE to rerun
 
     # t-tests: First for unequal variances
     result[i, "Welch"] <- t.test(y ~ x)$p.value <= 0.05
-    result[i, "Student"] <- t.test(y ~ x, var.equal = TRUE)$p.value <= 0.05
+    result[i, "Student"] <-
+      t.test(y ~ x, var.equal = TRUE)$p.value <= 0.05
 
     # Permutation test with B = 10000
     perm_dist <- replicate(1e4, statistic(sample(x), y))
@@ -841,7 +866,10 @@ if (FALSE) { # Set to TRUE to rerun
 
     setTxtProgressBar(pb, i)
   }
-  saveRDS(colMeans(result), file = paste0("simulation/", what, ".rds"))
+  saveRDS(
+    colMeans(result),
+    file = paste0("simulation/", what, ".rds")
+  )
 }
 
 # Type 1 error
@@ -895,7 +923,7 @@ with_seed(
 )
 mean(perm_dist >= statistic(x, y))
 
-# Via "coin", using the exact "shift" algorithm by Streitberg and Röhmel (1984)
+# "coin" uses exact shift algorithm by Streitberg and Röhmel (1984)
 library(coin)
 
 wilcox_test(y ~ factor(x), distribution = "exact")
@@ -930,7 +958,10 @@ mean(perm_dist >= statistic(x, y))
 ## Via coin
 library(coin)
 
-independence_test(y ~ x, distribution = approximate(nresample = 10000))
+independence_test(
+  y ~ x,
+  distribution = approximate(nresample = 10000)
+)
 ```
 
 **Comment:** For any of the tests considered, we can reject the null hypothesis of no correlation and claim that there is some association between the two variables.
@@ -955,7 +986,10 @@ x <- rep(c("pre", "post"), each = n)
 block <- rep(1:n, times = 2)
 data.frame(y, x, block)
 
-independence_test(y ~ factor(x) | factor(block), distribution = "exact")
+independence_test(
+  y ~ factor(x) | factor(block),
+  distribution = "exact"
+)
 ``` 
 **Comment:** The exact permutation test provides a different p value, but in both cases we cannot reject the null hypothesis of equal means.
 

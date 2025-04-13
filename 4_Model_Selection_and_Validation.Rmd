@@ -21,7 +21,7 @@ knit: (function(input, ...) {rmarkdown::render(input, output_dir = "docs")})
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  echo = TRUE, 
+  echo = TRUE,
   warning = FALSE,
   message = FALSE,
   eval = TRUE
@@ -64,7 +64,11 @@ What prediction (on logarithmic price scale) would we get with 5-nearest-neighbo
 library(ggplot2)
 library(FNN)
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 y <- "log_price"
 xvars <- c("log_carat", "color", "cut", "clarity")
@@ -109,7 +113,11 @@ library(tidyverse)
 library(FNN)
 library(withr)
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 y <- "log_price"
 xvars <- c("log_carat", "color", "cut", "clarity")
@@ -141,10 +149,20 @@ RMSE <- function(y, pred) {
   sqrt(mean((y - pred)^2))
 }
 
-pred_train <- knn.reg(X_train, test = X_train, k = 5, y = y_train)$pred
+pred_train <- knn.reg(
+  X_train,
+  test = X_train,
+  k = 5,
+  y = y_train
+)$pred
 cat("Training RMSE:", RMSE(y_train, pred_train))
 
-pred_valid <- knn.reg(X_train, test = X_valid, k = 5, y = y_train)$pred
+pred_valid <- knn.reg(
+  X_train,
+  test = X_valid,
+  k = 5,
+  y = y_train
+)$pred
 cat("Validation RMSE:", RMSE(y_valid, pred_valid))
 ```
 
@@ -155,17 +173,27 @@ Can we find a $k$ with better validation RMSE?
 ```{r}
 # Tuning grid with different values for parameter k
 paramGrid <- data.frame(train = NA, valid = NA, k = 1:20)
-    
+
 # Calculate performance for each row in the parameter grid
 for (i in 1:nrow(paramGrid)) {
   k <- paramGrid[i, "k"]
-  
+
   # Performance on training data
-  pred_train <- knn.reg(X_train, test = X_train, k = k, y = y_train)$pred
+  pred_train <- knn.reg(
+    X_train,
+    test = X_train,
+    k = k,
+    y = y_train
+  )$pred
   paramGrid[i, "train"] <- RMSE(y_train, pred_train)
-  
+
   # Performance on valid data
-  pred_valid <- knn.reg(X_train, test = X_valid, k = k, y = y_train)$pred
+  pred_valid <- knn.reg(
+    X_train,
+    test = X_valid,
+    k = k,
+    y = y_train
+  )$pred
   paramGrid[i, "valid"] <- RMSE(y_valid, pred_valid)
 }
 
@@ -173,8 +201,13 @@ for (i in 1:nrow(paramGrid)) {
 head(paramGrid[order(paramGrid$valid), ], 2)
 
 # Plot results
-pivot_longer(paramGrid, cols = -k, values_to = "RMSE", names_to = "Data") |> 
-ggplot(aes(x = k, y = RMSE, group = Data, color = Data)) +
+pivot_longer(
+  paramGrid,
+  cols = -k,
+  values_to = "RMSE",
+  names_to = "Data"
+) |>
+  ggplot(aes(x = k, y = RMSE, group = Data, color = Data)) +
   geom_point() +
   geom_line()
 ```
@@ -225,7 +258,11 @@ RMSE <- function(y, pred) {
   sqrt(mean((y - pred)^2))
 }
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 y <- "log_price"
 xvars <- c("log_carat", "color", "cut", "clarity")
@@ -243,22 +280,27 @@ table(fold_ix)
 
 # Tuning grid with different values for parameter k
 paramGrid <- data.frame(RMSE = NA, SE = NA, k = 1:20)
-    
+
 # Calculate performance for each row in the parameter grid
 for (i in 1:nrow(paramGrid)) {
   k <- paramGrid[i, "k"]
-  
+
   scores <- numeric(nfolds)
-  
+
   for (fold in 1:nfolds) {
     insample <- fold_ix != fold
     X_train <- X[insample, ]
     y_train <- diamonds[insample, y]
-    
+
     X_valid <- X[!insample, ]
     y_valid <- diamonds[!insample, y]
 
-    pred <- knn.reg(X_train, test = X_valid, k = k, y = y_train)$pred
+    pred <- knn.reg(
+      X_train,
+      test = X_valid,
+      k = k,
+      y = y_train
+    )$pred
     scores[fold] <- RMSE(y_valid, pred)
   }
   paramGrid[i, "RMSE"] <- mean(scores)
@@ -266,13 +308,19 @@ for (i in 1:nrow(paramGrid)) {
 }
 
 # Best CV-scores and their standard errors
-head(paramGrid[order(paramGrid$RMSE), ], 2)
+head(paramGrid[order(paramGrid$RMSE), ], 4)
 
 ggplot(paramGrid, aes(x = k, y = RMSE)) +
   geom_point(color = "chartreuse4") +
   geom_line(color = "chartreuse4") +
-  geom_errorbar(aes(ymin = RMSE - SE, ymax = RMSE + SE), width = 0) +
-  ggtitle("Performance by cross-validation", subtitle = "With standard errors")
+  geom_errorbar(
+    aes(ymin = RMSE - SE, ymax = RMSE + SE),
+    width = 0
+  ) +
+  ggtitle(
+    "Performance by cross-validation",
+    subtitle = "With standard errors"
+  )
 ```
 
 **Comment:** Using 7 neighbors seems to be the best choice regarding CV RMSE. Again, the fact that certain diamonds show up multiple times leaves a slightly bad feeling. Should we really trust these results? 
@@ -322,7 +370,11 @@ RMSE <- function(y, pred) {
   sqrt(mean((y - pred)^2))
 }
 
-diamonds <- transform(diamonds, log_price = log(price), log_carat = log(carat))
+diamonds <- transform(
+  diamonds,
+  log_price = log(price),
+  log_carat = log(carat)
+)
 
 y <- "log_price"
 xvars <- c("log_carat", "color", "cut", "clarity")
@@ -362,16 +414,21 @@ paramGrid <- data.frame(RMSE = NA, SE = NA, k = 1:20)
 for (i in 1:nrow(paramGrid)) {
   k <- paramGrid[i, "k"]
   scores <- numeric(nfolds)
-  
+
   for (fold in 1:nfolds) {
     insample <- fold_ix != fold
     X_train_cv <- X_train[insample, ]
     y_train_cv <- y_train[insample]
-    
+
     X_valid_cv <- X_train[!insample, ]
     y_valid_cv <- y_train[!insample]
-    
-    pred <- knn.reg(X_train_cv, test = X_valid_cv, k = k, y = y_train_cv)$pred
+
+    pred <- knn.reg(
+      X_train_cv,
+      test = X_valid_cv,
+      k = k,
+      y = y_train_cv
+    )$pred
     scores[fold] <- RMSE(y_valid_cv, pred)
   }
   paramGrid[i, "RMSE"] <- mean(scores)
@@ -379,7 +436,7 @@ for (i in 1:nrow(paramGrid)) {
 }
 
 # Best CV performance
-head(paramGrid[order(paramGrid$RMSE), ], 2)
+head(paramGrid[order(paramGrid$RMSE), ], 4)
 
 # Cross-validation performance of linear regression
 rmse_reg <- numeric(nfolds)
@@ -434,27 +491,33 @@ library(data.table)
 library(ggplot2)
 library(h2o)
 
-system.time(
-  dim(df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet"))  
-)
+dim(df <- read_parquet("taxi/yellow_tripdata_2018-01.parquet"))
 
 setDT(df)
 head(df)
 
 # Data prep
-system.time({
-  df[, duration := as.numeric(
-    difftime(tpep_dropoff_datetime, tpep_pickup_datetime, units = "mins")
-  )]
-  df = df[between(trip_distance, 0.2, 100) & between(duration, 1, 120)]
-  df[, `:=`(
+df[
+  ,
+  duration := as.numeric(
+    difftime(
+      tpep_dropoff_datetime,
+      tpep_pickup_datetime,
+      units = "mins"
+    )
+  )
+]
+df <- df[between(trip_distance, 0.2, 100) & between(duration, 1, 120)]
+df[
+  ,
+  `:=`(
     pu_hour = factor(data.table::hour(tpep_pickup_datetime)),
-    weekday = factor(data.table::wday(tpep_pickup_datetime)), # 1 = Sunday
+    weekday = factor(data.table::wday(tpep_pickup_datetime)), # 1 = Su
     pu_loc = forcats::fct_lump_min(factor(PULocationID), 1e5),
     log_duration = log(duration),
     log_distance = log(trip_distance)
-  )]
-})
+  )
+]
 
 xvars <- c("log_distance", "weekday", "pu_hour", "pu_loc")
 y <- "log_duration"
@@ -463,35 +526,36 @@ h2o.init(min_mem_size = "6G")
 
 h2o_df <- as.h2o(df[, c(xvars, y), with = FALSE])
 h2o_split <- h2o.splitFrame(
-  h2o_df, c(0.7, 0.2), destination_frames = c("train", "valid", "test")
+  h2o_df, c(0.7, 0.2),
+  destination_frames = c("train", "valid", "test")
 )
 
-system.time(  # 5 s
+system.time( # 5s
   fit <- h2o.glm(
-    x = xvars, 
-    y = "log_duration", 
-    training_frame = "train", 
-    validation_frame = "valid", 
-    lambda_search = TRUE, 
-    alpha = 0  # controls ratio of L1 to L2 penalty strength (0 means no L1)
+    x = xvars,
+    y = "log_duration",
+    training_frame = "train",
+    validation_frame = "valid",
+    lambda_search = TRUE,
+    alpha = 0 # ratio of L1 to L2 penalty strength (0 = no L1)
   )
 )
-fit  # Validation R2: 0.782; best lambda essentially 0 (no penalty)
+fit # Validation R2: 0.782; best lambda essentially 0 (no penalty)
 
 # Combine training + validation
 h2o_trainvalid <- h2o.rbind(h2o_split[[1]], h2o_split[[2]])
 
 # Fit model with optimal lambda (0)
 fit_final <- h2o.glm(
-  x = xvars, 
-  y = "log_duration", 
-  training_frame = h2o_trainvalid, 
-  validation_frame = "test", 
+  x = xvars,
+  y = "log_duration",
+  training_frame = h2o_trainvalid,
+  validation_frame = "test",
   lambda = 0,
   alpha = 0
 )
 
-fit_final  # Test R^2: 0.782
+fit_final # Test R^2: 0.782
 ```
 
 **Comment:** According to simple validation, no L2 penalty is needed. Thus, the final model is fitted without penalty on the pooled 90% training and validation data. Its test R-squared is very similar to the validation R-squared, indicating that there is no problematic overfit on the validation data. Why adding a penalty did not help to improve the model? Usually, ridge regression shines when the $n/p$ ratio is small. In our case, however, it is very large.
@@ -564,65 +628,65 @@ library(ggplot2)
 library(duckdb)
 
 # Initialize virtual DB and register diamonds data
-con = dbConnect(duckdb())
+con <- dbConnect(duckdb())
 duckdb_register(con, name = "dia", df = diamonds)
 
 # Select every column (and every row)
-con |> 
-  dbSendQuery("SELECT * FROM dia") |> 
-  dbFetch() |> 
-  head()  # See note above
+con |>
+  dbSendQuery("SELECT * FROM dia") |>
+  dbFetch() |>
+  head() # See note above
 
 # carat and log(price) sorted by carat in descending order
 query <- "
-  SELECT 
-    carat, LOG(price) AS log_price 
-  FROM dia 
+  SELECT
+    carat, LOG(price) AS log_price
+  FROM dia
   ORDER BY carat DESC
 "
-con |> 
-  dbSendQuery(query) |> 
-  dbFetch() |> 
+con |>
+  dbSendQuery(query) |>
+  dbFetch() |>
   head()
 
 # Filter on carat > 2 and color = 'E'
 query <- "
-  SELECT * 
-  FROM dia 
-  WHERE 
-    carat > 2 
+  SELECT *
+  FROM dia
+  WHERE
+    carat > 2
     AND color = 'E'
 "
-con |> 
-  dbSendQuery(query) |> 
-  dbFetch() |> 
+con |>
+  dbSendQuery(query) |>
+  dbFetch() |>
   head()
 
 # Aggregate
 query <- "
-  SELECT 
+  SELECT
     COUNT(*) AS N
     , AVG(price) AS avg_price
     , SUM(price) / 1e6 AS sum_price_mio
   FROM dia
 "
-con |> 
-  dbSendQuery(query) |> 
+con |>
+  dbSendQuery(query) |>
   dbFetch()
 
 # Grouped aggregate
 query <- "
-  SELECT 
+  SELECT
     color
     , COUNT(*) AS N
     , AVG(price) AS avg_price
     , SUM(price) / 1e6 AS sum_price_mio
   FROM dia
-  GROUP BY color 
+  GROUP BY color
   ORDER BY color
 "
-con |> 
-  dbSendQuery(query) |> 
+con |>
+  dbSendQuery(query) |>
   dbFetch()
 
 # Join average price per color to original data as nested query
@@ -630,7 +694,7 @@ con |>
 query <- "
   SELECT D.*, avg_price
   FROM dia D
-  LEFT JOIN 
+  LEFT JOIN
   (
       SELECT color, AVG(price) AS avg_price
       FROM dia
@@ -638,9 +702,9 @@ query <- "
   ) G
   ON D.color = G.color
 "
-con |> 
-  dbSendQuery(query) |> 
-  dbFetch() |> 
+con |>
+  dbSendQuery(query) |>
+  dbFetch() |>
   head()
 
 # Instead of nesting, we can use "WITH" to connect multiple queries
@@ -656,19 +720,19 @@ query <- "
   LEFT JOIN G
     ON D.color = G.color
 "
-con |> 
-  dbSendQuery(query) |> 
-  dbFetch() |> 
+con |>
+  dbSendQuery(query) |>
+  dbFetch() |>
   head()
 
-# Some SQL implementations also offer "Window" functions to do things like this
+# Some SQL implementations also offer "Window" functions
 query <- "
   SELECT *, AVG(price) OVER (PARTITION BY color) AS avg_price
   FROM dia
 "
-con |> 
-  dbSendQuery(query) |> 
-  dbFetch() |> 
+con |>
+  dbSendQuery(query) |>
+  dbFetch() |>
   head()
 
 dbDisconnect(con)
@@ -686,7 +750,7 @@ Here we will work directly with the taxi Parquet file. The goal is to answer the
 ```{r}
 library(duckdb)
 
-con = dbConnect(duckdb())
+con <- dbConnect(duckdb())
 
 # Show first five rows of Parquet file
 query <- "
@@ -694,63 +758,69 @@ query <- "
   FROM 'taxi/yellow_tripdata_2018-01.parquet'
   LIMIT 5
 "
-con |> 
-  dbSendQuery(query) |> 
+con |>
+  dbSendQuery(query) |>
   dbFetch()
 
 # How many rows does the file have?
 query <- "
-  SELECT COUNT(*) AS N 
+  SELECT COUNT(*) AS N
   FROM 'taxi/yellow_tripdata_2018-01.parquet'
 "
 
 # Instantaneous
-con |> 
-  dbSendQuery(query) |> 
+con |>
+  dbSendQuery(query) |>
   dbFetch()
 
 # Pickup location IDs with at least 100'000 rows
 # 'HAVING' is like a 'WHERE', but after a GROUP BY
 query <- "
-  SELECT 
+  SELECT
     PULocationID AS pu_loc
     , COUNT(*) AS N
   FROM 'taxi/yellow_tripdata_2018-01.parquet'
   GROUP BY PULocationID
   HAVING N >= 100000
 "
-con |> 
-  dbSendQuery(query) |> 
-  dbFetch() |> 
+con |>
+  dbSendQuery(query) |>
+  dbFetch() |>
   head()
 
 # Prepare taxi model data directly from Parquet
 query <- "
   WITH LOC AS (
-    SELECT 
+    SELECT
       PULocationID AS pu_loc
       , COUNT(*) AS N
     FROM 'taxi/yellow_tripdata_2018-01.parquet'
     GROUP BY PULocationID
     HAVING N >= 100000
   )
-  SELECT 
+  SELECT
     LOG(trip_distance) AS log_distance
-    , LOG(DATE_DIFF('minutes', tpep_pickup_datetime, tpep_dropoff_datetime)) AS log_duration
+    , LOG(
+        DATE_DIFF(
+          'minutes', tpep_pickup_datetime, tpep_dropoff_datetime
+        )
+      ) AS log_duration
     , DAYNAME(tpep_pickup_datetime) AS weekday
     , EXTRACT(hour FROM tpep_pickup_datetime) as pu_hour
     , COALESCE(CAST(L.pu_loc AS varchar), 'Other') AS pu_loc
   FROM 'taxi/yellow_tripdata_2018-01.parquet' A
   LEFT JOIN LOC L
   ON A.PULocationID = L.pu_loc
-  WHERE 
+  WHERE
     trip_distance BETWEEN 0.2 AND 100
-    AND DATE_DIFF('minutes', tpep_pickup_datetime, tpep_dropoff_datetime) BETWEEN 1 AND 120
+    AND DATE_DIFF(
+      'minutes', tpep_pickup_datetime, tpep_dropoff_datetime
+    ) BETWEEN 1 AND 120
 "
-system.time(
-  df <- con |> 
-    dbSendQuery(query) |> 
-    dbFetch() 
+system.time( # 2s
+  df <- con |>
+    dbSendQuery(query) |>
+    dbFetch()
 )
 
 head(df)
@@ -787,12 +857,12 @@ dbGetQuery(sc, "SELECT COUNT(*) AS N FROM diamonds")
 # 53940
 
 query <- "
-  SELECT 
+  SELECT
     color
     , COUNT(*) AS N
     , AVG(price) AS mean_price
-  FROM diamonds 
-  GROUP BY color 
+  FROM diamonds
+  GROUP BY color
   ORDER BY color
 "
 dbGetQuery(sc, query)
@@ -807,9 +877,9 @@ dbGetQuery(sc, query)
 # 7     J  2808   5323.818
 
 # dplyr style translated to Spark -> refer to R name "dia"
-dia |> 
-  group_by(color) |> 
-  summarise(N = count(), mean_price = mean(price)) |> 
+dia |>
+  group_by(color) |>
+  summarise(N = count(), mean_price = mean(price)) |>
   arrange(color)
 
 #   color     N mean_price
@@ -824,29 +894,32 @@ dia |>
 
 # "Window" functions are available as well
 query <- "
-  SELECT color, price, AVG(price) OVER (PARTITION BY color) AS avg_price
+  SELECT
+    color
+    , price
+    , AVG(price) OVER (PARTITION BY color) AS avg_price
   FROM diamonds
   LIMIT 2
 "
 dbGetQuery(sc, query)
- 
+
 #   color price avg_price
 # 1     D   357  3169.954
 # 2     D   402  3169.954
 
 # The same in dplyr style
 dia |>
-  select(color, price) |> 
-  group_by(color) |> 
-  mutate(avg_price = mean(price)) |> 
-  ungroup() |> 
+  select(color, price) |>
+  group_by(color) |>
+  mutate(avg_price = mean(price)) |>
+  ungroup() |>
   head(2)
- 
+
 #   color price avg_price
 #   <chr> <int>     <dbl>
 # 1 D       357     3170.
 # 2 D       402     3170.
-  
+
 spark_disconnect(sc)
 ```
 
@@ -863,14 +936,16 @@ sc <- spark_connect(master = "local")
 
 # Link to Parquet file
 df <- spark_read_parquet(
-  sc, name = "taxi", path = "taxi/yellow_tripdata_2018-01.parquet"
+  sc,
+  name = "taxi",
+  path = "taxi/yellow_tripdata_2018-01.parquet"
 )
 
 # SQL style
 query <- "
   SELECT
     CEILING(trip_distance) AS distance
-    , COUNT(*) AS N 
+    , COUNT(*) AS N
   FROM taxi
   WHERE trip_distance > 0 AND trip_distance <= 10
   GROUP BY CEILING(trip_distance)
@@ -891,9 +966,9 @@ dbGetQuery(sc, query)
 # 10       10  100274
 
 # Same with dplyr syntax (translated to Spark)
-df |> 
-  filter(trip_distance <= 10, trip_distance > 0) |> 
-  group_by(distance = ceiling(trip_distance)) |> 
+df |>
+  filter(trip_distance <= 10, trip_distance > 0) |>
+  group_by(distance = ceiling(trip_distance)) |>
   count() |>
   arrange(distance)
 

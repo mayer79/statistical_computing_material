@@ -21,9 +21,9 @@ knit: (function(input, ...) {rmarkdown::render(input, output_dir = "docs")})
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  echo = TRUE, 
+  echo = TRUE,
   warning = FALSE,
-  message = FALSE, 
+  message = FALSE,
   fig.height = 5,
   fig.width = 6,
   eval = TRUE
@@ -96,13 +96,19 @@ for (x in c("color", "clarity", "cut")) {
 }
 
 # Bivariate plots
-plot(price ~ carat, data = diamonds, col = "chartreuse4", pch = ".", xlim = c(0, 3))
 plot(
-  price ~ carat, 
-  data = diamonds, 
-  col = "chartreuse4", 
-  pch = ".", 
-  log = "xy", 
+  price ~ carat,
+  data = diamonds,
+  col = "chartreuse4",
+  pch = ".",
+  xlim = c(0, 3)
+)
+plot(
+  price ~ carat,
+  data = diamonds,
+  col = "chartreuse4",
+  pch = ".",
+  log = "xy",
   main = "log-log scale"
 )
 
@@ -110,8 +116,8 @@ for (x in c("color", "clarity", "cut")) {
   boxplot(
     reformulate(x, "price"),
     varwidth = TRUE,
-    data = diamonds, 
-    main = paste("price by levels of", x), 
+    data = diamonds,
+    main = paste("price by levels of", x),
     col = "chartreuse4"
   )
 }
@@ -148,17 +154,17 @@ library(ggplot2)
 library(magrittr)
 
 # Same as head(diamonds, 2)
-diamonds %>% 
+diamonds %>%
   head(2)
 
 # Not too spectacular. But what about these expressions?
-diamonds %>% 
-  subset(select = c(price, carat, color, clarity, cut)) %>% 
+diamonds %>%
+  subset(select = c(price, carat, color, clarity, cut)) %>%
   summary()
 
-diamonds$color %>% 
-  table() %>% 
-  prop.table() %>% 
+diamonds$color %>%
+  table() %>%
+  prop.table() %>%
   barplot(col = "chartreuse4")
 
 # The alternative to the last expression would be a nested construction like this:
@@ -170,7 +176,7 @@ diamonds$color %>%
 # barplot(x, col = "chartreuse4")
 
 # Voila the new base R pipe:
-iris |> 
+iris |>
   head(2)
 
 # Beautifully implemented:
@@ -211,63 +217,63 @@ library(tidyverse)
 
 # Price and carat of the two most expensive diamonds
 diamonds |>
-  select(price, carat) |> 
-  arrange(desc(price)) |> 
+  select(price, carat) |>
+  arrange(desc(price)) |>
   slice(1:2)
 
 # Select diamonds >2 carat and calculate log(price) and log(carat)
 # Possible simplification: transmute() = mutate() + select()
-diamonds |> 
-  filter(carat > 2) |> 
+diamonds |>
+  filter(carat > 2) |>
   mutate(
-    log_price = log(price), 
+    log_price = log(price),
     log_carat = log(carat)
-  ) |> 
-  select(log_price, log_carat) |> 
-  slice(1:2)  # Show first two rows only
+  ) |>
+  select(log_price, log_carat) |>
+  slice(1:2) # Show first two rows only
 
 # Median carat and price
-diamonds |> 
+diamonds |>
   summarize(
-    med_carat = median(carat), 
+    med_carat = median(carat),
     med_price = median(price)
   )
 
 # Same grouped by clarity
-med <- diamonds |> 
-  group_by(clarity) |> 
+med <- diamonds |>
+  group_by(clarity) |>
   summarize(
-    med_carat = median(carat), 
+    med_carat = median(carat),
     med_price = median(price)
   )
-med 
+med
 
 # Join medians to original data by using clarity as key
 # We only use price and the four "C" variables
 diamonds |>
-  select(price, starts_with("c")) |> 
+  select(price, starts_with("c")) |>
   left_join(med, by = "clarity") |>
-  slice(1:2)  # Show first two rows only
+  slice(1:2) # Show first two rows only
 
 # Directly with a grouped mutate (imagine this without pipe...)
 diamonds |>
-  select(price, starts_with("c")) |> 
-  group_by(clarity) |> 
+  select(price, starts_with("c")) |>
+  group_by(clarity) |>
   mutate(
     med_carat = median(carat),
     med_price = median(price)
-  ) |> 
-  ungroup() |> 
-  slice(1:2)  # Show first two rows only
+  ) |>
+  ungroup() |>
+  slice(1:2) # Show first two rows only
 
 # Turn all ordered factors into unordered
-dia <- diamonds |> 
+dia <- diamonds |>
   mutate_if(is.ordered, factor, ordered = FALSE)
 
 # Stack price and carat using the function pivot_longer() in "tidyr"
 # -> will need this later
-diamonds_long <- diamonds |> 
-  select(price, carat) |> 
+diamonds_long <- diamonds |>
+  select(price, carat) |>
   pivot_longer(everything())
 
 head(diamonds_long, 4)
@@ -364,19 +370,22 @@ p + facet_wrap("color")
 Combining faceting with data reshaping, we can draw histograms of multiple variables:
 
 ```{r}
-diamonds |> 
-  select(price, carat) |> 
-  pivot_longer(everything()) |> 
-ggplot(aes(value)) +
+diamonds |>
+  select(price, carat) |>
+  pivot_longer(everything()) |>
+  ggplot(aes(value)) +
   geom_histogram(fill = "chartreuse4", bins = 29) +
-  facet_wrap(~ name, scale = "free_x")
+  facet_wrap(~name, scale = "free_x")
 ```
 
 Another strength of "ggplot2" is that we can map columns not only to x and y coordinates, but also to aspects such as color, fill, alpha (transparency), shape, linetype and size:
 
 ```{r}
 # Here, "color" refers to the function argument, not the column name in diamonds
-ggplot(diamonds, mapping = aes(x = carat, y = price, color = clarity)) +
+ggplot(
+  diamonds,
+  mapping = aes(x = carat, y = price, color = clarity)
+) +
   geom_point(alpha = 0.2) +
   scale_x_log10() +
   scale_y_log10() +
@@ -398,8 +407,8 @@ library(plotly)
 # Mind the outer parentheses
 (
   ggplot(diamonds, mapping = aes(color)) +
-  geom_bar(fill = "chartreuse4")
-) |> 
+    geom_bar(fill = "chartreuse4")
+) |>
   ggplotly()
 ```
 
@@ -669,7 +678,7 @@ library(ggplot2)
 
 bar_plot <- function(xvar) {
   stopifnot(xvar %in% c("color", "clarity", "cut"))
-  
+
   ggplot(data = diamonds, mapping = aes(x = .data[[xvar]])) +
     geom_bar(fill = "chartreuse4") +
     ggtitle(sprintf("Bar plot of '%s'", xvar))
@@ -686,19 +695,22 @@ library(tidyverse)
 error_bars <- function(xvar) {
   stopifnot(xvar %in% c("color", "clarity", "cut"))
 
-  dat <- diamonds |> 
-    group_by(across(all_of(xvar))) |> 
+  dat <- diamonds |>
+    group_by(across(all_of(xvar))) |>
     summarize(mean_price = mean(price), sd_price = sd(price))
 
   ggplot(dat, aes(x = .data[[xvar]], y = mean_price)) +
     geom_errorbar(
-      aes(ymin = mean_price - sd_price, ymax = mean_price + sd_price),
+      aes(
+        ymin = mean_price - sd_price,
+        ymax = mean_price + sd_price
+      ),
       color = "chartreuse4",
       width = 0.2
     ) +
     geom_point(size = 3) +
     labs(
-      title = sprintf("Distribution of price by '%s'", xvar), 
+      title = sprintf("Distribution of price by '%s'", xvar),
       y = "Price"
     )
 }
@@ -721,7 +733,7 @@ library(ggplot2)
 class(price ~ color)
 plot(price ~ color, data = diamonds)
 
-# plot() applied to object of class "factor". 
+# plot() applied to object of class "factor".
 # Note: the first class "ordered" is skipped as it does not have its own plot method
 class(diamonds$color)
 plot(diamonds$color)
@@ -747,7 +759,7 @@ student <- function(given_name, family_name) {
 }
 
 me <- student("Michael", "Mayer")
-me  # same as print(me)
+me # same as print(me)
 
 # Nothing special so far. We first need a print() method for the "student" class
 print.student <- function(x, ...) {
@@ -755,7 +767,7 @@ print.student <- function(x, ...) {
   invisible(x)
 }
 
-print(me)  # same as me
+print(me) # same as me
 ```
 
 This construction is often used in R.
