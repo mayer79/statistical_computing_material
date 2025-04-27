@@ -11,7 +11,7 @@
 
 <meta name="author" content="Michael Mayer" />
 
-<meta name="date" content="2025-04-13" />
+<meta name="date" content="2025-04-27" />
 
 <title>4. Model Selection and Validation</title>
 
@@ -2904,7 +2904,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">4. Model Selection and Validation</h1>
 <h3 class="subtitle">Statistical Computing</h3>
 <h4 class="author">Michael Mayer</h4>
-<h4 class="date">2025-04-13</h4>
+<h4 class="date">2025-04-27</h4>
 
 </div>
 
@@ -3656,9 +3656,8 @@ waste of time, it is actually a good opportunity to learn</p>
 <p>For small data sets, the raw data is usually loaded into R/Python and
 then preprocessed in memory. For large data sets, this becomes slow or
 even impossible. One option is to externalize the preprocessing to a
-database server with its out-of-core capabilities or to a big data
-technology like Spark. In this section, we take a short trip into that
-world.</p>
+database server, or use big data technology like Spark that work
+out-of-core. In this section, we take a short trip into that world.</p>
 <div id="sql" class="section level2" number="8.1">
 <h2><span class="header-section-number">8.1</span> SQL</h2>
 <p>Communication with the database is usually done with <em>SQL</em>
@@ -3667,19 +3666,19 @@ programming languages in data science. The SQL code is usually written
 directly in a Database Management System (DBMS) or in R/Python. SQL is
 pronounced as “es-kiu-el” or “si-kwel”.</p>
 <p>We will introduce SQL with examples written in the in-process
-database <a href="duckdb.org">DuckDB</a>. “In-process” means that when
-DuckDB is run from R/Python, it is embedded in the R/Python process
+database system <a href="duckdb.org">DuckDB</a>. “In-process” means that
+when DuckDB is run from R/Python, it is embedded in the R/Python process
 itself. DuckDB is convenient for several reasons:</p>
 <ul>
 <li>It is easy to install.</li>
 <li>It has no external dependencies.</li>
 <li>It is extremely fast.</li>
-<li>It supports working with csv/Parquet files as well as with R/Python
-tables.</li>
+<li>It supports working with csv and Parquet files on disk as well as
+with R/Python tables in RAM.</li>
 <li>It plays well together with Apache Arrow.</li>
 <li>It works out-of-core, i.e., when data does not fit into RAM.</li>
 </ul>
-<p>DuckDB has been released in 2018 as an open-source project written in
+<p>DuckDB has been released in 2019 as an open-source project written in
 C++. Later, we will also take a look at Spark, the famous big data
 technology.</p>
 <p>Remark: While there is an ISO norm for SQL, specific implementations
@@ -3940,11 +3939,11 @@ system.time( # 2s
     dbFetch()
 )</code></pre>
 <pre><code>##    user  system elapsed 
-##    1.72    0.14    2.10</code></pre>
+##    3.66    0.31    2.61</code></pre>
 <pre class="r"><code>head(df)</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["log_distance"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["log_duration"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["weekday"],"name":[3],"type":["chr"],"align":["left"]},{"label":["pu_hour"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["pu_loc"],"name":[5],"type":["chr"],"align":["left"]}],"data":[{"1":"-0.040958608","2":"0.8450980","3":"Saturday","4":"12","5":"43","_rn_":"1"},{"1":"0.176091259","2":"0.9030900","3":"Sunday","4":"0","5":"48","_rn_":"2"},{"1":"1.027349608","2":"1.5910646","3":"Friday","4":"17","5":"68","_rn_":"3"},{"1":"-0.004364805","2":"0.9542425","3":"Friday","4":"20","5":"79","_rn_":"4"},{"1":"0.041392685","2":"0.8450980","3":"Sunday","4":"0","5":"90","_rn_":"5"},{"1":"-0.420216403","2":"1.0000000","3":"Tuesday","4":"13","5":"100","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["log_distance"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["log_duration"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["weekday"],"name":[3],"type":["chr"],"align":["left"]},{"label":["pu_hour"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["pu_loc"],"name":[5],"type":["chr"],"align":["left"]}],"data":[{"1":"0.48995848","2":"1.1139434","3":"Monday","4":"18","5":"43","_rn_":"1"},{"1":"0.14921911","2":"0.7781513","3":"Monday","4":"22","5":"48","_rn_":"2"},{"1":"0.32633586","2":"1.1461280","3":"Wednesday","4":"21","5":"68","_rn_":"3"},{"1":"0.34242268","2":"1.1461280","3":"Wednesday","4":"23","5":"79","_rn_":"4"},{"1":"0.08990511","2":"0.7781513","3":"Monday","4":"22","5":"90","_rn_":"5"},{"1":"-0.42021640","2":"1.0000000","3":"Tuesday","4":"13","5":"100","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 <p><strong>Comment:</strong> The last query provides essentially the
@@ -3960,7 +3959,7 @@ data. It has been part of the Apache Software Foundation since 2013 and
 is used extensively in industry. Its SQL engine can be used to process
 data of any size, also from within R or Python. Spark is written in the
 programming language “Scala”, which is being developed at EPFL Lausanne
-under the direction of Martin Odersky, the creator of Scala.</p>
+under the direction of Martin Odersky.</p>
 <p>Spark normally runs on a cluster consisting of many hundreds of nodes
 (= computers). For illustration purposes, however, we will use a normal
 laptop here, i.e., a “cluster” with only one node.</p>
@@ -3969,7 +3968,7 @@ laptop here, i.e., a “cluster” with only one node.</p>
 Diamonds</h3>
 <p>Let’s start a local Spark instance and apply some small queries to
 the diamond data. We will use both SQL and “dplyr” code, which will then
-be translated into Spark.</p>
+be translated into Spark SQL.</p>
 <pre class="r"><code>library(tidyverse)
 library(DBI)
 library(sparklyr)

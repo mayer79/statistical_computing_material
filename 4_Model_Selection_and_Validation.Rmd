@@ -595,22 +595,22 @@ Data tables are usually stored as files on a hard drive or as tables in a databa
 - what information the columns bear, and
 - what possible sources of bias might be present.
 
-For small data sets, the raw data is usually loaded into R/Python and then preprocessed in memory. For large data sets, this becomes slow or even impossible. One option is to externalize the preprocessing to a database server with its out-of-core capabilities or to a big data technology like Spark. In this section, we take a short trip into that world.
+For small data sets, the raw data is usually loaded into R/Python and then preprocessed in memory. For large data sets, this becomes slow or even impossible. One option is to externalize the preprocessing to a database server, or use big data technology like Spark that work out-of-core. In this section, we take a short trip into that world.
 
 ## SQL
 
 Communication with the database is usually done with *SQL* (Structured Query Language). This is one of the most frequently used programming languages in data science. The SQL code is usually written directly in a Database Management System (DBMS) or in R/Python. SQL is pronounced as "es-kiu-el" or "si-kwel".
 
-We will introduce SQL with examples written in the in-process database [DuckDB](duckdb.org). "In-process" means that when DuckDB is run from R/Python, it is embedded in the R/Python process itself. DuckDB is convenient for several reasons:
+We will introduce SQL with examples written in the in-process database system [DuckDB](duckdb.org). "In-process" means that when DuckDB is run from R/Python, it is embedded in the R/Python process itself. DuckDB is convenient for several reasons:
 
 - It is easy to install.
 - It has no external dependencies.
 - It is extremely fast.
-- It supports working with csv/Parquet files as well as with R/Python tables.
+- It supports working with csv and Parquet files on disk as well as with R/Python tables in RAM.
 - It plays well together with Apache Arrow.
 - It works out-of-core, i.e., when data does not fit into RAM.
 
-DuckDB has been released in 2018 as an open-source project written in C++. Later, we will also take a look at Spark, the famous big data technology.
+DuckDB has been released in 2019 as an open-source project written in C++. Later, we will also take a look at Spark, the famous big data technology.
 
 Remark: While there is an ISO norm for SQL, specific implementations (DuckDB, Spark, Oracle, SQL Server, ...) extend this standard command palette, resulting in different dialects. Thus, when googling a command, it will help to add the name of the implementation, like "extract hour from date in spark sql".
 
@@ -830,13 +830,13 @@ head(df)
 
 ## Spark
 
-[Apache Spark](https://spark.apache.org/) is an open-source, distributed processing system used for working with big data. It has been part of the Apache Software Foundation since 2013 and is used extensively in industry. Its SQL engine can be used to process data of any size, also from within R or Python. Spark is written in the programming language "Scala", which is being developed at EPFL Lausanne under the direction of Martin Odersky, the creator of Scala.
+[Apache Spark](https://spark.apache.org/) is an open-source, distributed processing system used for working with big data. It has been part of the Apache Software Foundation since 2013 and is used extensively in industry. Its SQL engine can be used to process data of any size, also from within R or Python. Spark is written in the programming language "Scala", which is being developed at EPFL Lausanne under the direction of Martin Odersky.
 
 Spark normally runs on a cluster consisting of many hundreds of nodes (= computers). For illustration purposes, however, we will use a normal laptop here, i.e., a "cluster" with only one node.
 
 ### Example: Diamonds
 
-Let's start a local Spark instance and apply some small queries to the diamond data. We will use both SQL and "dplyr" code, which will then be translated into Spark.
+Let's start a local Spark instance and apply some small queries to the diamond data. We will use both SQL and "dplyr" code, which will then be translated into Spark SQL.
 
 ```{r, eval=FALSE}
 library(tidyverse)
