@@ -224,7 +224,7 @@ rmse_bagged |>
 We have mentioned that ensemble models try to reduce variance to improve their test performance. But what does *variance* mean in this context? And why does a smaller variance leads to better test performance? For the MSE as performance measure, we have the following decomposition of the generalization error (@james2021):
 
 $$
-	\underbrace{\mathbb E(y_o - \hat f(x_o))^2}_{\text{Expected test MSE of } x_o} = \text{Var}(\hat f(x_o)) + \left[\text{Bias}(\hat f(x_o))\right]^2 + \underbrace{\text{Var}(\varepsilon)}_{\text{Irreducible error}},
+	\underbrace{\mathbb E(y_o - \hat f(x_o))^2}_{\text{Expected test squared error of } x_o} = \text{Var}(\hat f(x_o)) + \left[\text{Bias}(\hat f(x_o))\right]^2 + \underbrace{\text{Var}(\varepsilon)}_{\text{Irreducible error}},
 $$
 where
 
@@ -265,6 +265,8 @@ library(ggplot2)
 library(withr)
 library(ranger)
 library(MetricsWeighted)
+
+options(ranger.num.threads = 8)
 
 diamonds <- transform(
   diamonds,
