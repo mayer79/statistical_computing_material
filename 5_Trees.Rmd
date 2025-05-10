@@ -336,7 +336,7 @@ Let us study relative split gain importance regarding MSE improvement for the fe
 ```{r}
 imp <- sort(importance(fit))
 imp <- imp / sum(imp)
-barplot(imp, horiz = TRUE, col = "chartreuse4")
+barplot(imp, horiz = TRUE, col = "chartreuse4", las = 2)
 ```
 
 **Comment**: As expected, logarithmic carat is by far the most important feature.
@@ -1049,7 +1049,7 @@ for (v in xvars) {
 
 4. Consider the fully tuned XGBoost model for the diamonds data in the lecture notes above. Study the online documentation of XGBoost to figure out how to make the model monotonically increasing in `log_carat`. Test your approach without repeating the grid search part. How does the partial dependence plot for `log_carat` look now?
 
-5. In the gradient boosted trees algorithm for the squared error, why do we fit a regression tree to the residuals instead of simply adding as new model the residuals itself?
+5. In the gradient boosted trees algorithm for the squared error, why do we fit a regression tree to the residuals instead of simply adding as new model the residuals?
 
 6. (Optional) Develop an XGBoost model for the claims data set with binary response `clm`, and covariates `veh_value`, `veh_body`, `veh_age`, `gender`, `area`, and `agecat`. Use a clean cross-validation/test approach. Use log loss as loss function and evaluation metric. Interpret its results. You don't need to write all the code from scratch, but rather modify the XGBoost code from the lecture notes.
 
