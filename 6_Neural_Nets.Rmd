@@ -692,7 +692,7 @@ pred <- pred_fun(nn, X_test)
 rmse(y_test, pred)
 r_squared(y_test, pred, reference_mean = mean(y_train))
 
-# Permutation importance
+# Permutation importance regarding MSE
 perm_importance(
   nn,
   X = X_test,
@@ -755,7 +755,10 @@ Let's apply above scheme for diamond prices. We use the {effectplots} package to
 library(ggplot2)
 library(ranger)
 library(effectplots)
+library(hstats)
 library(withr)
+
+options(ranger.num.threads = 8)
 
 # STEP 1
 mean(diamonds$price)
@@ -779,7 +782,7 @@ fit <- ranger(
 )
 fit
 
-# Importance wrt test MSE
+# Permutation importance wrt test MSE
 imp <- perm_importance(
   fit,
   X = diamonds[-ix, xvars],
@@ -824,7 +827,7 @@ loss_gamma <- function(y_true, y_pred) {
 
 In this chapter, we have glimpsed into the world of neural networks and deep learning. Step by step we have learned how a neural network works. We have used Keras and TensorFlow to build models brick by brick. Furthermore, we met a simple analysis scheme involving ML that can be applied to many analysis situations.
 
-Here a short [comparison](https://github.com/mayer79/ML_Algorithm_Comparison) of some properties of the ML algorithms learned in this lecture (screenshot as per Sept. 7, 2020): 
+Here a short [comparison](https://github.com/mayer79/ML_Algorithm_Comparison) of some properties of the ML algorithms learned in this lecture (screenshot as per May 2025): 
 ![](figs/comparison_ML.PNG)
 
 # References
