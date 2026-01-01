@@ -582,7 +582,7 @@ df_plot <- data.frame(x = x, Truth = y)
 N <- c(1, 2, 10, 100, 1000)
 for (n in N) {
   df_plot[as.character(n)] <-
-    predict(fit, cbind(x = x), iteration = c(1, n + 1))
+    predict(fit, cbind(x = x), iterationrange = c(1, n))
 }
 
 # Transpose for plotting
@@ -666,11 +666,11 @@ fit <- xgb.train(
   params = params,
   data = dtrain,
   print_every_n = 50,
-  nrounds = cvm$best_iteration
+  nrounds = cvm$early_stop$best_iteration
 )
 
 # Test performance
-rmse(y_test, predict(fit, data.matrix(X_test))) # 0.0988
+rmse(y_test, predict(fit, data.matrix(X_test))) # 0.0991
 ```
 
 **Comments:** 
@@ -802,8 +802,8 @@ if (tune) {
     )
 
     # Store result
-    grid[i, 1] <- cvm$best_iteration
-    grid[i, 2:3] <- cvm$evaluation_log[, c(4, 2)][cvm$best_iteration]
+    grid[i, 1] <- best_iteration <- cvm$early_stop$best_iteration
+    grid[i, 2:3] <- cvm$evaluation_log[, c(4, 2)][best_iteration]
     setTxtProgressBar(pb, i)
 
     # Save grid to survive hard crashs
@@ -833,7 +833,7 @@ Now, the model is ready to be inspected by evaluating
 ```{r}
 # Performance on test data
 pred <- predict(fit, data.matrix(X_test))
-rmse(y_test, pred) # 0.0986
+rmse(y_test, pred) # 0.09898
 r_squared(y_test, pred, reference_mean = mean(y_train)) # 0.9906
 
 # Variable importance regarding MSE improvement
