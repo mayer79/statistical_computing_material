@@ -352,7 +352,7 @@ According to @efron1993 (p. 47), 25 to 200 Bootstrap samples are usually suffici
 ```{r}
 plot_stability <- function(x) { # x is the vector of Bootstrap replications
   df <- data.frame(x = x, b = 1:length(x))
-  df$se <- sapply(df$b, function(i) sd(x[1:i])) # "cumsd"
+  df$se <- sapply(df$b, function(i) sd(x[1:i])) # naive "cumsd" (could do better)
 
   ggplot(subset(df, b >= 20), aes(b, y = se)) +
     geom_line(color = "chartreuse4") +

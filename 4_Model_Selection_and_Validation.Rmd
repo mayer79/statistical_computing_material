@@ -214,7 +214,7 @@ pivot_longer(
 
 **Comments**
 
-- The amount of overfitting decreases for growing $k$, which makes sense.
+- The amount of overfitting (or better: optimism) decreases for growing $k$, which makes sense.
 - Selecting $k$ based on the training data would lead to a suboptimal model.
 - Based on the validation data, we would choose $k=6$. It has a minimal RMSE of 11.29%.
 - Why is the RMSE on the training data not 0 for 1-nearest-neighbor?
@@ -522,7 +522,7 @@ df[
 xvars <- c("log_distance", "weekday", "pu_hour", "pu_loc")
 y <- "log_duration"
 
-h2o.init(min_mem_size = "6G")
+h2o.init(min_mem_size = "8G")
 
 h2o_df <- as.h2o(df[, c(xvars, y), with = FALSE])
 h2o_split <- h2o.splitFrame(
@@ -540,7 +540,7 @@ system.time( # 5s
     alpha = 0 # ratio of L1 to L2 penalty strength (0 = no L1)
   )
 )
-fit # Validation R2: 0.782; best lambda essentially 0 (no penalty)
+fit # Validation R2: 78.2%; best lambda essentially 0 (no penalty)
 
 # Combine training + validation
 h2o_trainvalid <- h2o.rbind(h2o_split[[1]], h2o_split[[2]])
@@ -555,7 +555,7 @@ fit_final <- h2o.glm(
   alpha = 0
 )
 
-fit_final # Test R^2: 0.782
+fit_final # Test R^2: 78.2%
 ```
 
 **Comment:** According to simple validation, no L2 penalty is needed. Thus, the final model is fitted without penalty on the pooled 90% training and validation data. Its test R-squared is very similar to the validation R-squared, indicating that there is no problematic overfit on the validation data. Why adding a penalty did not help to improve the model? Usually, ridge regression shines when the $n/p$ ratio is small. In our case, however, it is very large.
@@ -790,34 +790,26 @@ con |>
 
 # Prepare taxi model data directly from Parquet
 query <- "
-  WITH LOC AS (
-    SELECT
-      PULocationID AS pu_loc
-      , COUNT(*) AS N
-    FROM 'taxi/yellow_tripdata_2018-01.parquet'
-    GROUP BY PULocationID
-    HAVING N >= 100000
-  )
+WITH counts AS (
   SELECT
-    LOG(trip_distance) AS log_distance
-    , LOG(
-        DATE_DIFF(
-          'minutes', tpep_pickup_datetime, tpep_dropoff_datetime
-        )
-      ) AS log_duration
-    , DAYNAME(tpep_pickup_datetime) AS weekday
-    , EXTRACT(hour FROM tpep_pickup_datetime) as pu_hour
-    , COALESCE(CAST(L.pu_loc AS varchar), 'Other') AS pu_loc
-  FROM 'taxi/yellow_tripdata_2018-01.parquet' A
-  LEFT JOIN LOC L
-  ON A.PULocationID = L.pu_loc
-  WHERE
-    trip_distance BETWEEN 0.2 AND 100
-    AND DATE_DIFF(
-      'minutes', tpep_pickup_datetime, tpep_dropoff_datetime
-    ) BETWEEN 1 AND 120
+    PULocationID,
+    trip_distance,
+    DATE_DIFF('minutes', tpep_pickup_datetime, tpep_dropoff_datetime) AS duration,
+    tpep_pickup_datetime,
+    COUNT(*) OVER (PARTITION BY PULocationID) AS N
+  FROM 'taxi/yellow_tripdata_2018-01.parquet'
+)
+SELECT
+  LOG(trip_distance) AS log_distance,
+  LOG(duration) AS log_duration,
+  DAYNAME(tpep_pickup_datetime) AS weekday,
+  EXTRACT(hour FROM tpep_pickup_datetime) AS pu_hour,
+  CASE WHEN N >= 100000 THEN CAST(PULocationID AS varchar) ELSE 'Other' END AS pu_loc
+FROM counts
+WHERE trip_distance BETWEEN 0.2 AND 100
+  AND duration BETWEEN 1 AND 120
 "
-system.time( # 2s
+system.time( # 1.5s
   df <- con |>
     dbSendQuery(query) |>
     dbFetch()
@@ -842,7 +834,7 @@ Let's start a local Spark instance and apply some small queries to the diamond d
 library(tidyverse)
 library(DBI)
 library(sparklyr)
-# spark_install("3.4")
+# spark_install("4")
 
 # Local Spark instance
 #  Maybe: Solve issue with Temp Dir on Windows

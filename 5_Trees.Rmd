@@ -298,7 +298,7 @@ y_test <- diamonds[-ix, y]
 rmse(y_test, pred) # 0.1020
 
 # Reference (intercept only) model "fitted" on training data
-r_squared(y_test, pred, reference_mean = mean(diamonds[ix, y])) # 0.99
+r_squared(y_test, pred, reference_mean = mean(diamonds[ix, y])) # 0.9900
 
 # Size of the fitted model
 format(object.size(fit), units = "auto")
@@ -309,7 +309,7 @@ format(object.size(fit), units = "auto")
 - Performance is much better than with bagging alone. Besides the random feature selection, the main reason for this is that very deep decision trees are grown.
 - The OOB estimate of performance is extremely close to the test set performance.
 - How can we interpret a complex model like this?
-- The model fills about 130 MB of RAM. This is a lot, given the fact that the diamonds data is not too large.
+- The model fills about 125 MB of RAM. This is a lot, given the fact that the diamonds data is not too large.
 
 ## Interpreting a black box
 
@@ -670,7 +670,7 @@ fit <- xgb.train(
 )
 
 # Test performance
-rmse(y_test, predict(fit, data.matrix(X_test))) # 0.0991
+rmse(y_test, predict(fit, data.matrix(X_test))) # 0.099
 ```
 
 **Comments:** 
@@ -833,8 +833,8 @@ Now, the model is ready to be inspected by evaluating
 ```{r}
 # Performance on test data
 pred <- predict(fit, data.matrix(X_test))
-rmse(y_test, pred) # 0.09898
-r_squared(y_test, pred, reference_mean = mean(y_train)) # 0.9906
+rmse(y_test, pred) # 0.099
+r_squared(y_test, pred, reference_mean = mean(y_train)) # 0.9905
 
 # Variable importance regarding MSE improvement
 imp <- xgb.importance(model = fit)
@@ -1016,8 +1016,8 @@ if (FALSE) { # Set to true to refit
 
 # Performance on test data
 pred <- predict(fit_lgb, data.matrix(X_test))
-rmse(y_test, pred) # 0.3014
-r_squared(y_test, pred, reference_mean = mean(y_train))
+rmse(y_test, pred) # 0.3012
+r_squared(y_test, pred, reference_mean = mean(y_train))  # 82.4%
 
 # Variable importance regarding MSE improvement
 imp <- lgb.importance(model = fit_lgb)
@@ -1037,7 +1037,7 @@ for (v in xvars) {
 - It takes long to tune a boosted trees model on many million data rows.
 - The resulting model is better than the linear regression, which had an R-squared (without data split) of about 78%, but not dramatically.
 - The effect of the dominating feature (`log_distance`) is realistic. Again, as with diamonds prices, we see that tree-based models do not have the capability to extrapolate a linear relationship. Depending on the application, this can be a problem.
-- The effect of the hour of day is not intuitive. Why are the predictions at 12:00 as high as during rush-hour?
+- The effect of the hour of day does not seem intuitive.
 
 # Exercises
 
