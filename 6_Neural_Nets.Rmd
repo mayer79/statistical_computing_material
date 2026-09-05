@@ -88,7 +88,7 @@ To gain confidence in neural networks, we first show that the parameters estimat
 
 ```{r}
 library(ggplot2)
-library(keras)
+library(keras3)
 
 # Input layer: we have 1 covariate
 input <- layer_input(shape = 1)
@@ -176,7 +176,7 @@ The following code is identical to the last one up to one extra line of code spe
 
 ```{r}
 library(ggplot2)
-library(keras)
+library(keras3)
 
 # Input layer: we have 1 covariate
 input <- layer_input(shape = 1)
@@ -244,7 +244,7 @@ Again, the code is very similar to the last one, with the exception of using a h
 
 ```{r}
 library(ggplot2)
-library(keras)
+library(keras3)
 
 # Input layer: we have 1 covariate
 input <- layer_input(shape = 1)
@@ -380,7 +380,7 @@ We will now fit a neural net with two hidden layers (30 and 15 nodes) and a tota
 ```{r}
 library(ggplot2)
 library(withr)
-library(keras)
+library(keras3)
 library(MetricsWeighted)
 library(hstats)
 
@@ -422,7 +422,7 @@ prep_nn <- function(X, sel = xvars, scaling = sc) {
 }
 
 # Trying to make things reproducible...
-k_clear_session()
+clear_session()
 tensorflow::set_random_seed(499)
 
 # Input layer: we have 4 covariates
@@ -543,7 +543,7 @@ library(arrow)
 library(data.table)
 library(withr)
 library(ggplot2)
-library(keras)
+library(keras3)
 library(MetricsWeighted)
 library(hstats)
 
@@ -619,7 +619,7 @@ prep_nn <- function(X, dense = x_dense, scaling = sc) {
 prep_nn(head(test, 1))
 
 # Trying to make things reproducible...
-k_clear_session()
+clear_session()
 tensorflow::set_random_seed(469)
 
 # Inputs
@@ -674,9 +674,9 @@ if (FALSE) { # Set to true to refit
     )
   plot(history, metrics = c("loss", "val_loss"), smooth = FALSE) +
     coord_cartesian(ylim = c(0, 0.15))
-  save_model_weights_hdf5(nn, "taxi/taxi_nn.h5")
+  save_model_weights(nn, "taxi/taxi_nn.h5")
 } else {
-  load_model_weights_hdf5(nn, "taxi/taxi_nn.h5")
+  load_model_weights(nn, "taxi/taxi_nn.h5")
 }
 
 # ====================================================================
@@ -815,7 +815,7 @@ feature_effects(
 
     ```{r, eval=FALSE}
 loss_gamma <- function(y_true, y_pred) {
-  -k_log(y_true / y_pred) + y_true / y_pred
+  -op_log(y_true / y_pred) + y_true / y_pred
 }
     ```
 

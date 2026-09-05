@@ -797,8 +797,9 @@ The larger the data, the more we need to care about efficient
 - data preprocessing, and
 - model fitting.
 
-In the following example, we will use Parquet for data storage, load the data via Arrow, preprocess it with R's "data.table", and fit a linear regression with H2O. These technologies share three important properties: They are free to use, open-source, and are (currently) state of the art.
+In the following example, we will use Parquet for data storage, Arrow to load the data, R's data.table for preprocessing, and H2O to fit a linear regression model. We deliberately combine different technologies to showcase their respective strengths. In practice, however, it is preferable to build workflows with less technology breaks.
 
+All four technologies share three important characteristics: they are free to use, open source, and, at the time of writing, state of the art.
 Before going through the example, here a very brief introduction to the mentioned technologies.
 
 ## Selected technologies
@@ -808,12 +809,12 @@ Before going through the example, here a very brief introduction to the mentione
 [Apache Parquet](https://en.wikipedia.org/wiki/Apache_Parquet) is a column-oriented data storage format introduced in 2013. Unlike csv files, it uses various methods to compress data:
 
 - *Dictionary encoding:* Columns with a small number of unique values (e.g. canton names) are encoded using short integers. The mapping is stored as meta information.
-- *Run-length encoding:* Multiple occurences of a value are replaced by the value and the number of repetitions. Example: if "3.1", occurs 100 times after each other, only two values are needed for reconstruction: "3.1" and "100".
-- *Bit packing:* Multiple small integers are represented by a single integer.
+- *Run-length encoding:* Multiple occurrences of a value are replaced by the value and the number of repetitions. Example: if "3.1", occurs 100 times after each other, only two values are needed for reconstruction: "3.1" and "100".
+- *Standard compression:* Resulting values (within column chunks) are compressed using standard compression algorithms like Snappy or Zstd.
 
 Besides compression, a big advantage compared to a csv file is that Parquet also stores meta information like: "the values represent strings" or "the values represent dates". A disadvantage is that the Parquet file is not human-readable. 
 
-Parquet files can be read via the (Py)Arrow library in R or Python. Many other technologies (Apache Spark, other database systems) also support working with Parquet files. We will get to know some of them later.
+Parquet files can be read via the (Py)Arrow library in R or Python. Many other technologies (Apache Spark, DuckDB, Polars) also support working with Parquet files. We will get to know some of them later.
 
 ### Arrow
 
@@ -823,7 +824,7 @@ Arrow is widely used in R and Python for reading and writing Parquet files. Furt
 
 ### R's data.table
 
-The [data.table](https://cran.r-project.org/web/packages/data.table/index.html) package is an R package for working with large data in an efficient way. It was released in 2006 as an extension of R's `data.frame` and performs most operations in-place, i.e., without making copies. "data.table" is famous for its fast csv reader/writer. One of its biggest successes was that its sort algorithm became part of base R. There is also a Python package "data.table", but it is less mature. At the time of writing, "Polars" seems to be a good alternative in Python.
+The [data.table](https://cran.r-project.org/web/packages/data.table/index.html) package is an R package for working with large data in an efficient way. It was released in 2006 as an extension of R's `data.frame` and performs most operations in-place, i.e., without making copies. "data.table" is famous for its fast csv reader/writer. One of its biggest successes was that its sort algorithm became part of base R. A newer alternative is "Polars", which is entirely written in the programming language Rust. Polars is mainly used in Python.
 
 ### H2O
 
@@ -965,9 +966,10 @@ summary(fit)
 # ================================================================
 
 # Create single-node Java "cluster" locally on laptop
-h2o.init(min_mem_size = "6G")
+h2o.init(min_mem_size = "8G")
 
-# Copy data to cluster
+# Copy data to cluster. This step is not ideal. Better: Store prepared data
+# as parquet file, and load that directly into h2o.
 h2o_df <- as.h2o(df[, c(x, y), with = FALSE])
 
 # Calculations are all done in Java
@@ -981,7 +983,7 @@ summary(h2o_df)
 # 3rd Qu.: 1.05620  7:1188593  21:476472  162  : 305512  3rd Qu.:2.825
 # Max.   : 4.56101  5:1081250  15:472400  230  : 305349  Max.   :4.787
 
-system.time( # 4s
+system.time( # 2s
   fit_h2o <- h2o.glm(
     x,
     y = "log_duration",
@@ -1052,6 +1054,8 @@ diamonds <- mutate_if(
 4. Fit a Gamma regression with log-link to explain diamond prices by "log(carat)", "color", "cut", and "clarity". Compare the coefficients with those of a linear regression having the same covariates, but using "log(price)" as response. Calculate the relative bias of the average prediction. Why isn't it 0?
 
 5. Fit the Gamma GLM of Exercise 4 with H2O, optionally replacing the data preparation with "data.table". Do you get the same results?
+
+6. Bonus: Visit https://pola-rs.github.io/r-polars/ and play with the Polars library in R. Use Polar's lazy mode to approximate the data preparation done with "data.table" above.
 
 # Summary
 

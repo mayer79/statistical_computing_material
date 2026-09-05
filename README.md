@@ -39,7 +39,7 @@ Place it in the project subfolder "taxi/".
 
 ### Software
 
-We will work with R version >= 4.4 and RStudio. 
+We will work with R version >= 4.6 and RStudio. 
 
 In the first two chapters, we will need these contributed R packages:
 
@@ -66,9 +66,9 @@ For the remaining chapters, we further need:
 - hstats
 - MetricsWeighted
 - effectplots
-- keras (requires Python, see below)
+- keras3 (requires Python, see below)
 
-For the last chapter, we additionally need Python with TensorFlow >= 2.15. You can install it by running the R command `keras::install_keras(version = "release-cpu")`. If the following code works, you are all set. (Some red start-up messages/warnings are okay.)
+For the last chapter, we additionally need Python with TensorFlow. You can install it by running the R command `keras3::install_keras()`. If the following code works, you are all set. (Some red start-up messages/warnings are okay.)
 
 ```
 library(tensorflow)

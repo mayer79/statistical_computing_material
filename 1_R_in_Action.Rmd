@@ -175,7 +175,7 @@ diamonds$color %>%
 # x <- prop.table(x)
 # barplot(x, col = "chartreuse4")
 
-# Voila the new base R pipe:
+# Voila the base R pipe:
 iris |>
   head(2)
 
@@ -662,7 +662,6 @@ Solutions include:
 
 - `select(all_of(c("x1", "x2")))` instead of `select(x1, x2)`
 - `group_by(across(all_of("x1")))` instead of `group_by(x1)`
-- `aes_string(x = "x1")` instead of `aes(x = x1)` (might be deprecated soon)
 - `aes(x = .data[["x1"]])` instead of `aes(x = x1)`
 - `reformulate(c("x1", "x2"))` instead of `~ x1 + x2`
 - `reformulate(c("x1", "x2"), "y")` instead of `y ~ x1 + x2`
